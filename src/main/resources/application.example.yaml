@@ -7,13 +7,12 @@ client:
   url: http://localhost:3000
 
 spring:
-#  profiles:
-#    active: prod
+#  Please change the database connection string to your own
   datasource:
-    url: "jdbc:mysql://localhost:3306/book-exchange"
+    url: "jdbc:mysql://localhost:3306/defaultdb"
     driverClassName: "com.mysql.cj.jdbc.Driver"
     username: root
-    password:
+    password: root
   jpa:
     hibernate:
       ddl-auto: update
@@ -23,7 +22,8 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
 
 jwt:
-  signerKey: "5063bfd4c6ac9e6facd5601108848b60afb31d87e97e3cc8e8cd1bca166995a8"
+#  Generate new key to replace the old one
+  signerKey: "5063bfd4c6ac9e6facd5601108848b60afb31d87e97e3cc8e8cd1bca166995a9"
   valid-duration: 300 # in second
   refreshable-duration: 120000 # in seconds
 
