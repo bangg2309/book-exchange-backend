@@ -21,6 +21,12 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
+brevo:
+  api-key:
+  email:
+  name:
+  verify-email-url:
+
 jwt:
 #  Generate new key to replace the old one
   signerKey: "5063bfd4c6ac9e6facd5601108848b60afb31d87e97e3cc8e8cd1bca166995a9"
