@@ -7,14 +7,13 @@ import com.bookexchange.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import sendinblue.ApiException;
 
 import java.text.ParseException;
 
@@ -33,6 +32,20 @@ public class AuthenticationController {
         var result = authenticationService.authenticate(request);
         return ResponseEntity.ok(ApiResponse.<AuthenticationResponse>builder().result(result).build());
     }
+
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<Void>> register(@RequestBody @Valid RegisterRequest request) throws ApiException {
+        authenticationService.register(request);
+        return ResponseEntity.ok(ApiResponse.<Void>builder().build());
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity verify(@RequestParam VerificationEmailRequest token) {
+        authenticationService.verifyEmail(token);
+        return ResponseEntity.ok("Email verified successfully");
+    }
+
+
 
     @Operation(summary = "Introspect an access token", description = "Verify if the provided access token is valid and retrieve its metadata.")
     @PostMapping("/introspect")

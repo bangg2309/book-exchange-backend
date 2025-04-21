@@ -21,6 +21,15 @@ public enum ErrorCode {
     SUBJECT_NOT_FOUND(1012, "Subject not found", HttpStatus.NOT_FOUND),
     TOKEN_EXPIRED(1013, "Token expired", HttpStatus.UNAUTHORIZED),
     INVALID_TOKEN(1014, "Invalid token", HttpStatus.BAD_REQUEST),
+    EMAIL_EXISTED(1015, "Email existed", HttpStatus.BAD_REQUEST), VERIFICATION_TOKEN_NOT_FOUND(1016, "Verification token not found", HttpStatus.NOT_FOUND),
+    VERIFICATION_TOKEN_EXPIRED(1017, "Verification token expired", HttpStatus.UNAUTHORIZED),
+    USER_ALREADY_VERIFIED(1018, "User already verified", HttpStatus.BAD_REQUEST),
+    INVALID_EMAIL(1019, "Invalid email", HttpStatus.BAD_REQUEST),
+    USER_NOT_VERIFIED(1020, "User not verified", HttpStatus.UNAUTHORIZED),
+    USER_BANNED(1021, "User banned", HttpStatus.UNAUTHORIZED),
+    USERNAME_REQUIRED(1022, "Username is required", HttpStatus.BAD_REQUEST),
+    EMAIL_REQUIRED(1023, "Email is required", HttpStatus.BAD_REQUEST),
+    PASSWORD_REQUIRED(1024, "Password is required", HttpStatus.BAD_REQUEST),;
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
