@@ -1,17 +1,19 @@
 package com.bookexchange.service;
 
-import com.bookexchange.dto.request.AuthenticationRequest;
-import com.bookexchange.dto.request.IntrospectRequest;
-import com.bookexchange.dto.request.LogoutRequest;
-import com.bookexchange.dto.request.RefreshRequest;
+import com.bookexchange.constant.PredefinedRole;
+import com.bookexchange.dto.request.*;
 import com.bookexchange.dto.response.AuthenticationResponse;
 import com.bookexchange.dto.response.IntrospectResponse;
 import com.bookexchange.entity.InvalidatedToken;
+import com.bookexchange.entity.Role;
 import com.bookexchange.entity.User;
+import com.bookexchange.entity.VerificationToken;
 import com.bookexchange.exception.AppException;
 import com.bookexchange.exception.ErrorCode;
 import com.bookexchange.repository.InvalidatedTokenRepository;
+import com.bookexchange.repository.RoleRepository;
 import com.bookexchange.repository.UserRepository;
+import com.bookexchange.repository.VerificationTokenRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
@@ -27,11 +29,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import sendinblue.ApiException;
 
 import java.text.ParseException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.StringJoiner;
 import java.util.UUID;
 
@@ -42,6 +47,10 @@ import java.util.UUID;
 public class AuthenticationService {
     UserRepository userRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
+    RoleRepository roleRepository;
+    VerificationTokenRepository verificationTokenRepository;
+    EmailService emailService;
+    PasswordEncoder passwordEncoder;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -75,6 +84,14 @@ public class AuthenticationService {
                 .findByUsername(request.getUsername())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
+        if (user.getStatus() == 0) {
+            throw new AppException(ErrorCode.USER_NOT_VERIFIED);
+        }
+
+        if (user.getStatus() == 2) {
+            throw new AppException(ErrorCode.USER_BANNED);
+        }
+
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
 
         if (!authenticated) throw new AppException(ErrorCode.UNAUTHENTICATED);
@@ -85,6 +102,61 @@ public class AuthenticationService {
         return AuthenticationResponse.builder().accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .authenticated(true).build();
+    }
+
+    public void register(RegisterRequest request) throws ApiException {
+        log.info("Registering user: {}", request.getUsername());
+
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new AppException(ErrorCode.USER_EXISTED);
+        }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new AppException(ErrorCode.EMAIL_EXISTED);
+        }
+
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setEmail(request.getEmail());
+        user.setStatus(0);
+        HashSet<Role> roles = new HashSet<>();
+        roleRepository.findById(PredefinedRole.USER_ROLE).ifPresent(roles::add);
+
+        user.setRoles(roles);
+        userRepository.save(user);
+
+        //Create verification token
+        String token = UUID.randomUUID().toString();
+        //Save token to database
+        verificationTokenRepository.save(VerificationToken.builder().token(token)
+                .user(user)
+                .expiryDate(LocalDateTime.now().plusDays(1))
+                .build());
+
+        //Send email
+        emailService.sendVerificationEmailApi(
+                request.getEmail(),
+                "Verification Email",
+                "?token=" + token
+        );
+    }
+
+    public void verifyEmail(VerificationEmailRequest request) {
+        VerificationToken token = verificationTokenRepository.findByToken(request.getToken())
+                .orElseThrow(() -> new AppException(ErrorCode.VERIFICATION_TOKEN_NOT_FOUND));
+
+        if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.VERIFICATION_TOKEN_EXPIRED);
+        }
+        if (token.getUser().getStatus() != 0) {
+            throw new AppException(ErrorCode.USER_ALREADY_VERIFIED);
+        }
+
+        User user = token.getUser();
+        user.setStatus(1);
+        userRepository.save(user);
+
+        verificationTokenRepository.delete(token);
     }
 
     public void logout(LogoutRequest request) throws ParseException, JOSEException {
