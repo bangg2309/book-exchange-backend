@@ -28,7 +28,7 @@ public class User {
     String fullName;
     String phone;
     String avatar;
-    Integer status;
+    int status;
     String address;
 
     @ManyToOne(fetch = FetchType.LAZY)

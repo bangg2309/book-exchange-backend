@@ -16,4 +16,7 @@ public class UserUpdateRequest {
     String email;
     String avatar;
     List<String> roles;
+    String phone;
+    int status;
+
 }
