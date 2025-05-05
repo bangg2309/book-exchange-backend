@@ -18,9 +18,24 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final String[] PUBLIC_ENDPOINTS = {"/**", "/api/**",
-            "/users", "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/swagger-ui.html",
-            "/webjars/**", "/posts/**"
+    private final String[] PUBLIC_ENDPOINTS = {
+            "/users",
+            "/auth/token",
+            "/auth/introspect",
+            "/auth/logout",
+            "/auth/refresh",
+            "auth/register",
+            "/auth/verify-email",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/swagger-resources/**",
+            "/swagger-ui.html",
+            "/webjars/**",
+            "/schools",
+            "/categories",
+            "/authors",
+            "/listed-books/latest",
+
     };
 
     @Autowired
@@ -29,6 +44,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
+                .cors(cors -> {})
                 .authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_ENDPOINTS)
                         .permitAll()
                         .anyRequest()
