@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.awt.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -29,11 +30,18 @@ public class ListedBook {
 
     String title;
 
-    String author;
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "book_authors",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "author_id")
+    )
+    private Set<Author> authors = new HashSet<>();
 
-    String thumnail;
+    String thumbnail;
     String publisher;
     String publishYear;
+    String isbn;
     String language;
 
     @Column(columnDefinition = "TEXT")
@@ -45,13 +53,13 @@ public class ListedBook {
     @JoinColumn(name = "seller_id")
     User seller;
 
-    Integer conditionNumber;
+    int conditionNumber;
 
     @Column(columnDefinition = "TEXT")
     String conditionDescription;
 
+    BigDecimal priceNew;
     BigDecimal price;
-    BigDecimal discount;
     Integer status;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -60,7 +68,8 @@ public class ListedBook {
 
     Integer inPerson;
 
-    String image;
+    @OneToMany(mappedBy = "listedBook", cascade = CascadeType.ALL)
+    Set<Image> images = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -75,6 +84,8 @@ public class ListedBook {
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
     Set<Review> reviews = new HashSet<>();
+
+    String address;
 
     @CreationTimestamp
     LocalDateTime createdAt;

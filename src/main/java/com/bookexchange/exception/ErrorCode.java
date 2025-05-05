@@ -29,8 +29,10 @@ public enum ErrorCode {
     USER_BANNED(1021, "User banned", HttpStatus.UNAUTHORIZED),
     USERNAME_REQUIRED(1022, "Username is required", HttpStatus.BAD_REQUEST),
     EMAIL_REQUIRED(1023, "Email is required", HttpStatus.BAD_REQUEST),
-    PASSWORD_REQUIRED(1024, "Password is required", HttpStatus.BAD_REQUEST),;
-    ;
+    PASSWORD_REQUIRED(1024, "Password is required", HttpStatus.BAD_REQUEST),
+    USER_NOT_FOUND(1025, "User not found", HttpStatus.NOT_FOUND),
+    SCHOOL_NOT_FOUND(1026, "School not found", HttpStatus.NOT_FOUND),
+    ROLE_NOT_EXISTED(1027, "Role not existed", HttpStatus.NOT_FOUND),;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
         this.code = code;
