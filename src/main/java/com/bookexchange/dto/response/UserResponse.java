@@ -3,6 +3,7 @@ package com.bookexchange.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
@@ -11,8 +12,13 @@ import java.util.Set;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserResponse {
-    String id;
+    long id;
     String username;
-    private String email;
+    String email;
+    String avatar;
+    String phone;
+    int status;
     Set<RoleResponse> roles;
+    LocalDateTime createdAt;
+    LocalDateTime updatedAt;
 }
