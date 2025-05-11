@@ -1,6 +1,7 @@
 package com.bookexchange.service;
 
 import com.bookexchange.dto.request.ListedBookCreationRequest;
+import com.bookexchange.dto.response.ListedBookDetailResponse;
 import com.bookexchange.dto.response.ListedBooksResponse;
 import com.bookexchange.entity.*;
 import com.bookexchange.exception.AppException;
@@ -107,5 +108,12 @@ public class ListedBookService {
         return listedbooks.stream()
                 .map(listedBookMapper::toListedBooksResponse)
                 .collect(Collectors.toList());
+    }
+
+    public ListedBookDetailResponse getListedDetail(Long id) {
+        ListedBook listedBook = listedBookRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND));
+
+        return listedBookMapper.toListedBookDetailResponse(listedBook);
     }
 }

@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
     List<ListedBook> findTop4ByStatusOrderByCreatedAtDesc(Integer status);
+
 }
