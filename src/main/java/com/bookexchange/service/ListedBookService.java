@@ -1,6 +1,7 @@
 package com.bookexchange.service;
 
 import com.bookexchange.dto.request.ListedBookCreationRequest;
+import com.bookexchange.dto.response.BookDetailResponse;
 import com.bookexchange.dto.response.ListedBooksResponse;
 import com.bookexchange.entity.*;
 import com.bookexchange.exception.AppException;
@@ -15,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -107,5 +109,11 @@ public class ListedBookService {
         return listedbooks.stream()
                 .map(listedBookMapper::toListedBooksResponse)
                 .collect(Collectors.toList());
+    }
+
+    public BookDetailResponse getBookDetail(Long id) {
+        ListedBook book = listedBookRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOK_NOT_FOUND));
+        return listedBookMapper.toBookDetailResponse(book);
     }
 }
