@@ -2,6 +2,7 @@ package com.bookexchange.controller;
 
 import com.bookexchange.dto.request.ApiResponse;
 import com.bookexchange.dto.request.ListedBookCreationRequest;
+import com.bookexchange.dto.response.ListedBookDetailResponse;
 import com.bookexchange.dto.response.ListedBooksResponse;
 import com.bookexchange.service.ListedBookService;
 import jakarta.validation.Valid;
@@ -33,6 +34,12 @@ public class ListedBookController {
 
         return ApiResponse.<List<ListedBooksResponse>>builder()
                 .result(listedBookService.getLatestListedBooks())
+                .build();
+    }
+    @GetMapping("{id}")
+    public ApiResponse<ListedBookDetailResponse> getListedDetail(@PathVariable Long id) {
+        return ApiResponse.<ListedBookDetailResponse>builder()
+                .result(listedBookService.getListedDetail(id))
                 .build();
     }
 }
