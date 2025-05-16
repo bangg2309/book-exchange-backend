@@ -35,6 +35,7 @@ public class SecurityConfig {
             "/categories",
             "/authors",
             "/listed-books/latest",
+            "/listed-books/{id}",
             "/slides",
     };
 
