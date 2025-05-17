@@ -25,7 +25,7 @@ public class ListedBookMapper {
                 .price(listedBook.getPrice())
                 .description(listedBook.getDescription())
                 .fullName(listedBook.getSeller().getFullName())
-                .schoolName(listedBook.getSchool().getName())
+                .schoolName(listedBook.getSchool() != null ? listedBook.getSchool().getName() : null)
                 .thumbnail(listedBook.getThumbnail())
                 .build();
     }

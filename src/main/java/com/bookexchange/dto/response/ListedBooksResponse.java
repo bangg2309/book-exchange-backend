@@ -16,10 +16,10 @@ public class ListedBooksResponse {
     BigDecimal priceNew;
     BigDecimal price;
     int conditionNumber;
-    String fullName;
-    String schoolName;
-    String author;
-    String publisher;
     String description;
     String thumbnail;
+    String publisher;
+    String schoolName;
+    String fullName;
+    String author;
 }

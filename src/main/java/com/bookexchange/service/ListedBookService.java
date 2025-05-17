@@ -3,6 +3,7 @@ package com.bookexchange.service;
 import com.bookexchange.dto.request.ListedBookCreationRequest;
 import com.bookexchange.dto.response.ListedBookDetailResponse;
 import com.bookexchange.dto.response.ListedBooksResponse;
+import com.bookexchange.dto.response.PageableData;
 import com.bookexchange.entity.*;
 import com.bookexchange.exception.AppException;
 import com.bookexchange.exception.ErrorCode;
@@ -12,6 +13,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -115,5 +119,16 @@ public class ListedBookService {
                 .orElseThrow(() -> new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND));
 
         return listedBookMapper.toListedBookDetailResponse(listedBook);
+    }
+
+    public PageableData getListBookWithPageable(int pageNo, int pageSize) {
+        log.info("Get listed books with pageNo: {} and pageSize: {}", pageNo,pageSize);
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+        Page<ListedBooksResponse> listedBooks = listedBookRepository.getListBookWithPageable(pageable);
+        log.info("Total pages: {}", listedBooks);
+        if (listedBooks.hasContent()) {
+            return PageableData.builder().totalPages(listedBooks.getTotalPages()).totalElements(listedBooks.getTotalElements()).data(listedBooks.getContent()).build();
+        }
+        return null;
     }
 }

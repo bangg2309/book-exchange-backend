@@ -36,7 +36,7 @@ public class SecurityConfig {
             "/authors",
             "/listed-books/latest",
             "/listed-books/{id}",
-
+            "/listed-books**",
     };
 
     @Autowired
