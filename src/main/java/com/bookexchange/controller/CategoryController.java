@@ -45,7 +45,7 @@ public class CategoryController {
 
     // Lấy chi tiết danh mục theo ID
     @GetMapping("/{id}")
-    public ApiResponse<CategoryManagementResponse> getCategory(@PathVariable String id) {
+    public ApiResponse<CategoryManagementResponse> getCategory(@PathVariable long id) {
         return ApiResponse.<CategoryManagementResponse>builder()
                 .result(categoryService.getCategory(id))
                 .build();
@@ -63,7 +63,7 @@ public class CategoryController {
 
     // Cập nhật danh mục
     @PutMapping("/{id}")
-    public ApiResponse<CategoryManagementResponse> updateCategory(@PathVariable String id, @RequestBody CategoryUpdateRequest request) {
+    public ApiResponse<CategoryManagementResponse> updateCategory(@PathVariable long id, @RequestBody CategoryUpdateRequest request) {
         return ApiResponse.<CategoryManagementResponse>builder()
                 .result(categoryService.updateCategory(id, request))
                 .build();
@@ -71,7 +71,7 @@ public class CategoryController {
 
     // Xoá danh mục
     @DeleteMapping("/{id}")
-    public ApiResponse<String> deleteCategory(@PathVariable String id) {
+    public ApiResponse<String> deleteCategory(@PathVariable long id) {
         categoryService.deleteCategory(id);
         return ApiResponse.<String>builder()
                 .result("Category deleted successfully")

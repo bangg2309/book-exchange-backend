@@ -47,7 +47,7 @@ public class CategoryService {
         return categoryMapper.toCategoryManagementResponse(categoryRepository.save(category));
     }
     @PreAuthorize("hasRole('ADMIN')")
-    public CategoryManagementResponse getCategory(String id) {
+    public CategoryManagementResponse getCategory(long id) {
         return categoryMapper.toCategoryManagementResponse(
                 categoryRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)));
     }
@@ -58,7 +58,7 @@ public class CategoryService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    public CategoryManagementResponse updateCategory(String id, CategoryUpdateRequest request) {
+    public CategoryManagementResponse updateCategory(long id, CategoryUpdateRequest request) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
 
@@ -67,7 +67,7 @@ public class CategoryService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    public void deleteCategory(String id) {
+    public void deleteCategory(long id) {
         if (!categoryRepository.existsById(id)) {
             throw new AppException(ErrorCode.CATEGORY_NOT_FOUND);
         }
