@@ -6,7 +6,15 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class SlideMapper {
-    public SlideResponse toSlideResponse(Slide slideImage){
-        return SlideResponse.builder().imageUrl(slideImage.getImageUrl()).build();
+
+    public SlideResponse toSlideResponse(Slide slideImage) {
+        return SlideResponse.builder()
+                .id(slideImage.getId())
+                .imageUrl(slideImage.getImageUrl())
+                .addedBy(slideImage.getAddedBy() != null ? slideImage.getAddedBy().getUsername() : null)
+                .addedAt(slideImage.getAddedAt())
+                .event(slideImage.getEvent())
+                .status(slideImage.getStatus()) // thêm status
+                .build();
     }
 }

@@ -37,6 +37,7 @@ public class SecurityConfig {
             "/listed-books/latest",
             "/listed-books/{id}",
             "/slides",
+            "/slides/{slideId}",
     };
 
     @Autowired
