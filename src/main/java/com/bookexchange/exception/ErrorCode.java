@@ -34,6 +34,11 @@ public enum ErrorCode {
     SCHOOL_NOT_FOUND(1026, "School not found", HttpStatus.NOT_FOUND),
     ROLE_NOT_EXISTED(1027, "Role not existed", HttpStatus.NOT_FOUND),
     LISTED_BOOK_NOT_FOUND(1028, "Listed book not found", HttpStatus.NOT_FOUND),
+    CART_NOT_FOUND(1029, "Shopping cart not found", HttpStatus.NOT_FOUND),
+    LISTED_BOOK_NOT_AVAILABLE(1030, "Listed book not available", HttpStatus.BAD_REQUEST),
+    ITEM_ALREADY_IN_CART(1031, "Item already in cart", HttpStatus.BAD_REQUEST),
+    CART_ITEM_NOT_FOUND(1032, "Cart item not found", HttpStatus.NOT_FOUND),
+    CART_ITEM_NOT_BELONG_TO_USER(1033, "Cart item does not belong to user", HttpStatus.FORBIDDEN),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
