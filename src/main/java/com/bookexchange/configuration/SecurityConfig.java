@@ -7,8 +7,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
@@ -18,57 +16,67 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final String[] PUBLIC_ENDPOINTS = {
-            "/users",
-            "/auth/token",
-            "/auth/introspect",
-            "/auth/logout",
-            "/auth/refresh",
-            "auth/register",
-            "/auth/verify-email",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/swagger-resources/**",
-            "/swagger-ui.html",
-            "/webjars/**",
-            "/schools",
-            "/categories",
-            "/authors",
-            "/listed-books/latest",
-            "/listed-books/{id}",
-            "/listed-books**",
-    };
+  private final String[] PUBLIC_ENDPOINTS = {
+          "/users",
+          "/auth/token",
+          "/auth/google/**",
+          "/login/**",
+          "/auth/introspect",
+          "/auth/logout",
+          "/auth/refresh",
+          "auth/register",
+          "/auth/verify-email",
+          "/swagger-ui/**",
+          "/v3/api-docs/**",
+          "/swagger-resources/**",
+          "/swagger-ui.html",
+          "/webjars/**",
+          "/schools",
+          "/categories",
+          "/authors",
+          "/listed-books/latest",
+          "/listed-books/{id}",
+          "/listed-books**",
+  };
 
-    @Autowired
-    private CustomJwtDecoder customJwtDecoder;
-
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity
-                .cors(cors -> {})
-                .authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_ENDPOINTS)
-                        .permitAll()
-                        .anyRequest()
-                        .authenticated());
-
-        httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer
-                        .decoder(customJwtDecoder)
-                        .jwtAuthenticationConverter(jwtAuthenticationConverter()))
-                .authenticationEntryPoint(new JwtAuthenticationEntryPoint()));
-        httpSecurity.csrf(AbstractHttpConfigurer::disable);
-
-        return httpSecurity.build();
-    }
+  @Autowired
+  private CustomJwtDecoder customJwtDecoder;
 
 
-    @Bean
-    JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        jwtGrantedAuthoritiesConverter.setAuthorityPrefix("");
+  @Bean
+  public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+    httpSecurity
+            .cors(cors -> {
+            })
+            .authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_ENDPOINTS)
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated());
 
-        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter);
+    httpSecurity.oauth2Login(
+            oauth2Login -> oauth2Login
+                    .redirectionEndpoint(endpoint -> endpoint.baseUri("/login/oauth2/code/google"))
+                    .defaultSuccessUrl("/auth/google/success", true)
+    );
 
-        return jwtAuthenticationConverter;
-    }
+    httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer
+                    .decoder(customJwtDecoder)
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter()))
+            .authenticationEntryPoint(new JwtAuthenticationEntryPoint()));
+    httpSecurity.csrf(AbstractHttpConfigurer::disable);
+
+    return httpSecurity.build();
+  }
+
+
+  @Bean
+  JwtAuthenticationConverter jwtAuthenticationConverter() {
+    JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+    jwtGrantedAuthoritiesConverter.setAuthorityPrefix("");
+
+    JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+    jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter);
+
+    return jwtAuthenticationConverter;
+  }
 }

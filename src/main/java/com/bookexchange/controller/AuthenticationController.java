@@ -3,6 +3,7 @@ package com.bookexchange.controller;
 import com.bookexchange.dto.request.*;
 import com.bookexchange.dto.response.AuthenticationResponse;
 import com.bookexchange.dto.response.IntrospectResponse;
+import com.bookexchange.entity.User;
 import com.bookexchange.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,11 +12,18 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import sendinblue.ApiException;
 
 import java.text.ParseException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Tag(name = "Authentication API", description = "Endpoints for handling authentication and token management")
 @RestController
@@ -25,6 +33,47 @@ import java.text.ParseException;
 public class AuthenticationController {
 
     AuthenticationService authenticationService;
+
+    @NonFinal
+    @Value("${spring.security.oauth2.client.provider.google.authorization-uri}")
+    private String googleAuthUri;
+
+    @NonFinal
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String clientId;
+
+    @NonFinal
+    @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
+    private String redirectUri;
+
+    @NonFinal
+    @Value("${spring.security.oauth2.client.registration.google.scope}")
+    private String scope;
+
+
+    @GetMapping("/google/authorize")
+    public ResponseEntity<Map<String, String>> getGoogleAuthUrl() {
+        String authUrl = String.format("%s?client_id=%s&redirect_uri=%s&response_type=code&scope=%s",
+                googleAuthUri, clientId, redirectUri, scope.replace(",", "%20"));
+
+        Map<String, String> response = new HashMap<>();
+        response.put("redirectUrl", authUrl);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/google/success")
+    public ResponseEntity<User> handleGoogleCallback(@AuthenticationPrincipal OAuth2User principal) {
+        User user = authenticationService.loginWithGoogle(principal.getAttributes());
+        return ResponseEntity.ok(user);
+    }
+
+    @GetMapping("/google/failure")
+    public ResponseEntity<Map<String, String>> handleAuthFailure() {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Google authentication failed: invalid_request. Please check configuration.");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
 
     @Operation(summary = "Authenticate and obtain an access token", description = "This endpoint allows users to log in and receive an access token and a refresh token.")
     @PostMapping("/token")

@@ -30,6 +30,7 @@ public class User {
     String avatar;
     int status;
     String address;
+    String googleId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "school_id")
