@@ -13,4 +13,5 @@ import java.io.Serializable;
 public class AuthorResponse {
     Long id;
     String name;
+    String imageUrl;
 }

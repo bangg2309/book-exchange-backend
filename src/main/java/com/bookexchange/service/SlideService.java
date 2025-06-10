@@ -29,7 +29,7 @@ public class SlideService {
                 .toList();
     }
 
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteSlide(String slideId) {
         long id = Long.parseLong(slideId);
         if (!slideImageRepository.existsById(slideId)) {
@@ -38,7 +38,7 @@ public class SlideService {
         slideImageRepository.deleteById(slideId);
     }
 
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public SlideResponse updateSlide(String slideId, SlideRequest request) {
         long id = Long.parseLong(slideId);
         Slide slide = slideImageRepository.findById(slideId)

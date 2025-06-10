@@ -38,6 +38,8 @@ public class SecurityConfig {
             "/listed-books/{id}",
             "/slides",
             "/slides/{slideId}",
+            "/authors",
+            "/authors/{authorId}",
     };
 
     @Autowired
