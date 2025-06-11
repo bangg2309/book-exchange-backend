@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class OrderService {
+    // Số chữ số thập phân khi làm tròn
+    private static final int DECIMAL_SCALE = 2;
+
     OrderRepository orderRepository;
     OrderItemRepository orderItemRepository;
     OrderBookItemRepository orderBookItemRepository;
@@ -38,6 +42,7 @@ public class OrderService {
     CartItemRepository cartItemRepository;
     CartService cartService;
     OrderMapper orderMapper;
+    VoucherService voucherService;
 
     /**
      * Process a checkout request and create orders
@@ -58,45 +63,92 @@ public class OrderService {
             throw new AppException(ErrorCode.SHIPPING_ADDRESS_NOT_BELONG_TO_USER);
         }
 
-        // 3. Validate and apply voucher if provided
-        Voucher voucher = null;
-        if (request.getVoucherCode() != null && !request.getVoucherCode().isEmpty()) {
-            voucher = voucherRepository.findByCode(request.getVoucherCode())
-                    .orElseThrow(() -> new AppException(ErrorCode.VOUCHER_NOT_FOUND));
+        // 3. Nhóm items theo người bán và tính subtotal
+        Map<Long, List<OrderItemRequest>> itemsBySeller = request.getItems().stream()
+                .collect(Collectors.groupingBy(OrderItemRequest::getSellerId));
+        
+        // Tính tổng giá trị hàng hóa và tổng phí vận chuyển
+        BigDecimal subtotal = calculateSubtotal(request.getItems());
+        BigDecimal totalShippingFee = BigDecimal.ZERO;
+        
+        for (List<OrderItemRequest> sellerItems : itemsBySeller.values()) {
+            if (!sellerItems.isEmpty()) {
+                totalShippingFee = totalShippingFee.add(sellerItems.getFirst().getShippingFee());
+            }
+        }
+        
+        // Tính tổng giá trị đơn hàng trước khi chiết khấu
+        BigDecimal totalBeforeDiscount = subtotal.add(totalShippingFee);
 
-            // Additional voucher validation could go here (expiration, usage limits, etc.)
+        // 4. Validate và áp dụng voucher nếu có
+        Voucher voucher = null;
+        BigDecimal discount = BigDecimal.ZERO;
+        BigDecimal discountRate = BigDecimal.ZERO;
+        
+        if (request.getVoucherCode() != null && !request.getVoucherCode().isEmpty()) {
+            try {
+                // Tính số tiền giảm giá
+                discount = voucherService.validateAndCalculateDiscount(request.getVoucherCode(), subtotal);
+                
+                // Lấy thông tin voucher
+                voucher = voucherRepository.findByCode(request.getVoucherCode())
+                        .orElseThrow(() -> new AppException(ErrorCode.VOUCHER_NOT_FOUND));
+                
+                // Cập nhật request với số tiền giảm giá
+                request.setDiscount(discount);
+                
+                // Tính tỷ lệ giảm giá (dùng để phân bổ)
+                if (subtotal.compareTo(BigDecimal.ZERO) > 0) {
+                    discountRate = discount.divide(subtotal, DECIMAL_SCALE, RoundingMode.HALF_UP);
+                }
+                
+                // Cập nhật tổng giá trị đơn hàng sau khi giảm giá
+                BigDecimal newTotal = subtotal.add(totalShippingFee).subtract(discount);
+                request.setTotalPrice(newTotal);
+                
+                // Đánh dấu voucher đã được sử dụng
+                voucherService.applyVoucher(request.getVoucherCode());
+            } catch (AppException e) {
+                // Nếu voucher không hợp lệ, tiếp tục mà không áp dụng
+                log.warn("Invalid voucher: {}", e.getMessage());
+                request.setVoucherCode(null);
+            }
+        } else {
+            // Không có voucher, giá trị đơn hàng không thay đổi
+            request.setTotalPrice(totalBeforeDiscount);
         }
 
-        // 4. Create the order
+        // 5. Tạo đơn hàng
         Order order = new Order();
         order.setUser(user);
         order.setShippingAddress(shippingAddress);
         order.setPaymentMethod(request.getPaymentMethod());
         order.setPlatformVoucher(voucher);
-        order.setShippingFee(request.getShippingFee());
-        order.setDiscount(request.getDiscount());
+        order.setShippingFee(totalShippingFee);
+        order.setDiscount(discount);
         order.setTotalPrice(request.getTotalPrice());
         order.setStatus(1); // 1 = Pending
 
-        // Save order to get the ID
+        // Lưu order để lấy ID
         Order savedOrder = orderRepository.save(order);
 
-        // 5. Process order items by seller
+        // 6. Xử lý các OrderItem (nhóm theo người bán)
         List<OrderItem> orderItems = new ArrayList<>();
-
-        // Group items by seller
-        Map<Long, List<OrderItemRequest>> itemsBySeller = request.getItems().stream()
-                .collect(Collectors.groupingBy(OrderItemRequest::getSellerId));
-
+        
+        // Phân bổ số tiền giảm giá cho từng OrderItem
+        BigDecimal totalDiscountApplied = BigDecimal.ZERO;
+        BigDecimal remainingDiscount = discount;
+        List<OrderItemWithSubtotal> orderItemsWithSubtotals = new ArrayList<>();
+        
         for (Map.Entry<Long, List<OrderItemRequest>> entry : itemsBySeller.entrySet()) {
             Long sellerId = entry.getKey();
             List<OrderItemRequest> sellerItems = entry.getValue();
 
-            // Validate seller
+            // Xác thực người bán
             User seller = userRepository.findById(sellerId)
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-            // Create order item (representing all books from one seller)
+            // Tạo OrderItem (đại diện cho tất cả sách từ một người bán)
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(savedOrder);
             orderItem.setSeller(seller);
@@ -104,25 +156,25 @@ public class OrderService {
             orderItem.setNote(sellerItems.getFirst().getNote());
             orderItem.setStatus(1); // 1 = Pending
 
-            // Calculate total amount for this seller's items
-            BigDecimal totalAmount = BigDecimal.ZERO;
-
-            // Save the order item first to get its ID
+            // Tính tổng giá trị đơn hàng từ người bán này
+            BigDecimal sellerSubtotal = BigDecimal.ZERO;
+            
+            // Lưu OrderItem trước để lấy ID
             OrderItem savedOrderItem = orderItemRepository.save(orderItem);
-
-            // Process each book item
+            
+            // Xử lý từng sách
             for (OrderItemRequest itemRequest : sellerItems) {
                 for (OrderBookItemRequest bookItemRequest : itemRequest.getBookItems()) {
-                    // Validate book
+                    // Xác thực sách
                     ListedBook book = listedBookRepository.findById(bookItemRequest.getBookId())
                             .orElseThrow(() -> new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND));
 
-                    // Validate book availability
+                    // Kiểm tra sách còn khả dụng không
                     if (book.getStatus() != 1) {
                         throw new AppException(ErrorCode.LISTED_BOOK_NOT_AVAILABLE);
                     }
 
-                    // Create order book item
+                    // Tạo OrderBookItem
                     OrderBookItem orderBookItem = new OrderBookItem();
                     orderBookItem.setOrderItem(savedOrderItem);
                     orderBookItem.setBook(book);
@@ -130,30 +182,88 @@ public class OrderService {
                     orderBookItem.setPrice(bookItemRequest.getPrice());
                     orderBookItem.setSubtotal(bookItemRequest.getSubtotal());
 
-                    // Save book item
+                    // Lưu OrderBookItem
                     orderBookItemRepository.save(orderBookItem);
 
-                    // Add to total
-                    totalAmount = totalAmount.add(bookItemRequest.getSubtotal());
+                    // Cộng vào tổng giá trị của người bán này
+                    sellerSubtotal = sellerSubtotal.add(bookItemRequest.getSubtotal());
 
-                    // Mark book as sold/pending delivery
+                    // Đánh dấu sách đã bán
                     book.setStatus(2); // 2 = Sold/Pending delivery
                     listedBookRepository.save(book);
                 }
             }
-
-            // Update total amount
-            savedOrderItem.setTotalAmount(totalAmount.add(savedOrderItem.getShippingFee()));
-            orderItemRepository.save(savedOrderItem);
-
+            
+            // Lưu lại thông tin để phân bổ giảm giá
+            orderItemsWithSubtotals.add(new OrderItemWithSubtotal(savedOrderItem, sellerSubtotal));
+            
+            // Thêm vào danh sách kết quả
             orderItems.add(savedOrderItem);
         }
+        
+        // 7. Phân bổ giảm giá cho từng OrderItem
+        int lastIndex = orderItemsWithSubtotals.size() - 1;
+        
+        for (int i = 0; i < orderItemsWithSubtotals.size(); i++) {
+            OrderItemWithSubtotal item = orderItemsWithSubtotals.get(i);
+            BigDecimal itemDiscount;
+            
+            if (i == lastIndex) {
+                // Đơn hàng cuối cùng nhận phần giảm giá còn lại để tránh sai số làm tròn
+                itemDiscount = remainingDiscount;
+            } else {
+                // Phân bổ theo tỷ lệ giá trị đơn hàng
+                itemDiscount = item.subtotal.multiply(discountRate).setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
+                remainingDiscount = remainingDiscount.subtract(itemDiscount);
+            }
+            
+            // Cập nhật tổng tiền sau khi giảm giá
+            BigDecimal totalWithShipping = item.orderItem.getShippingFee().add(item.subtotal);
+            BigDecimal finalTotal = totalWithShipping.subtract(itemDiscount);
+            
+            // Lưu vào OrderItem
+            item.orderItem.setTotalAmount(finalTotal);
+            orderItemRepository.save(item.orderItem);
+            
+            // Cộng vào tổng giảm giá đã áp dụng
+            totalDiscountApplied = totalDiscountApplied.add(itemDiscount);
+        }
 
-        // 6. Clear the user's cart
+        // 8. Xóa giỏ hàng
         cartService.clearCart(user.getId());
 
-        // 7. Return the order response
+        // 9. Trả về response
         return orderMapper.toOrderResponse(savedOrder, orderItems);
+    }
+
+    /**
+     * Lớp phụ trợ để lưu OrderItem và giá trị subtotal của nó
+     */
+    private static class OrderItemWithSubtotal {
+        final OrderItem orderItem;
+        final BigDecimal subtotal;
+        
+        OrderItemWithSubtotal(OrderItem orderItem, BigDecimal subtotal) {
+            this.orderItem = orderItem;
+            this.subtotal = subtotal;
+        }
+    }
+
+    /**
+     * Calculate subtotal of all items in an order
+     * @param items List of order items
+     * @return Total order value
+     */
+    private BigDecimal calculateSubtotal(List<OrderItemRequest> items) {
+        BigDecimal subtotal = BigDecimal.ZERO;
+        
+        for (OrderItemRequest item : items) {
+            for (OrderBookItemRequest bookItem : item.getBookItems()) {
+                subtotal = subtotal.add(bookItem.getSubtotal());
+            }
+        }
+        
+        return subtotal;
     }
 
     /**

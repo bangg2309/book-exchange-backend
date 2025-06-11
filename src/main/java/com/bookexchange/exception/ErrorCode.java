@@ -47,7 +47,12 @@ public enum ErrorCode {
     VOUCHER_MIN_ORDER_NOT_MET(1039, "Order does not meet minimum amount for voucher", HttpStatus.BAD_REQUEST),
     ORDER_NOT_FOUND(1040, "Order not found", HttpStatus.NOT_FOUND),
     ORDER_ITEM_NOT_FOUND(1041, "Order item not found", HttpStatus.NOT_FOUND),
-    ORDER_NOT_BELONG_TO_USER(1042, "Order does not belong to user", HttpStatus.FORBIDDEN)
+    ORDER_NOT_BELONG_TO_USER(1042, "Order does not belong to user", HttpStatus.FORBIDDEN),
+    
+    VOUCHER_CODE_ALREADY_EXISTS(1043, "Voucher code already exists", HttpStatus.BAD_REQUEST),
+    VOUCHER_MAX_USES_REACHED(1044, "Voucher has reached maximum number of uses", HttpStatus.BAD_REQUEST),
+    ORDER_VALUE_TOO_LOW(1045, "Order value is too low for this voucher", HttpStatus.BAD_REQUEST),
+    INVALID_VOUCHER(1046, "Invalid voucher configuration", HttpStatus.BAD_REQUEST)
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
