@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,27 +26,41 @@ public class Voucher {
     @Column(unique = true)
     String code;
 
-    String type;
+    String description;
+
+    BigDecimal discountAmount;
+
+    @Column(name = "discount_percentage")
+    Integer discountPercentage;
+
+    @Column(name = "min_order_value")
+    BigDecimal minOrderValue;
+
+    @Column(name = "max_discount")
+    BigDecimal maxDiscount;
+
+    @Column(name = "starts_at")
+    LocalDateTime startsAt;
+
+    @Column(name = "expires_at")
+    LocalDateTime expiresAt;
+
+    @Column(name = "max_uses")
+    Integer maxUses;
+
+    @Column(name = "current_uses")
+    Integer currentUses;
+
+    @CreationTimestamp
+    LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id")
     User seller;
 
-    BigDecimal discountAmount;
-    BigDecimal discountPercent;
-    BigDecimal minOrderValue;
-    BigDecimal maxDiscountAmount;
-    LocalDateTime startDate;
-    LocalDateTime endDate;
-    Integer usageLimit;
-    Integer usedCount;
-
     @OneToMany(mappedBy = "platformVoucher")
     Set<Order> ordersWithPlatformVoucher = new HashSet<>();
-
-    @OneToMany(mappedBy = "shopVoucher")
-    Set<OrderItem> orderItemsWithShopVoucher = new HashSet<>();
-
-    @CreationTimestamp
-    LocalDateTime createdAt;
 }

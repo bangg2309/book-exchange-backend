@@ -12,6 +12,7 @@ public class CartMapper {
                 .bookId(cartItem.getListedBook().getId())
                 .quantity(1)
                 .thumbnail(cartItem.getListedBook().getThumbnail())
+                .sellerId(cartItem.getListedBook().getSeller().getId())
                 .sellerName(cartItem.getListedBook().getSeller().getFullName())
                 .bookTitle(cartItem.getListedBook().getTitle())
                 .description(cartItem.getListedBook().getDescription())

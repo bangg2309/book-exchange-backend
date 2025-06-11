@@ -80,7 +80,7 @@ public class ListedBook {
     Set<Category> categories = new HashSet<>();
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
-    Set<OrderItem> orderItems = new HashSet<>();
+    Set<OrderBookItem> orderBookItems = new HashSet<>();
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
     Set<Review> reviews = new HashSet<>();

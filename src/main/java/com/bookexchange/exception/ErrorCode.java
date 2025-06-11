@@ -39,6 +39,15 @@ public enum ErrorCode {
     ITEM_ALREADY_IN_CART(1031, "Item already in cart", HttpStatus.BAD_REQUEST),
     CART_ITEM_NOT_FOUND(1032, "Cart item not found", HttpStatus.NOT_FOUND),
     CART_ITEM_NOT_BELONG_TO_USER(1033, "Cart item does not belong to user", HttpStatus.FORBIDDEN),
+    SHIPPING_ADDRESS_NOT_FOUND(1034, "Shipping address not found", HttpStatus.NOT_FOUND),
+    SHIPPING_ADDRESS_NOT_BELONG_TO_USER(1035, "Shipping address does not belong to user", HttpStatus.FORBIDDEN),
+    VOUCHER_NOT_FOUND(1036, "Voucher not found", HttpStatus.NOT_FOUND),
+    VOUCHER_EXPIRED(1037, "Voucher has expired", HttpStatus.BAD_REQUEST),
+    VOUCHER_USAGE_EXCEEDED(1038, "Voucher usage limit exceeded", HttpStatus.BAD_REQUEST),
+    VOUCHER_MIN_ORDER_NOT_MET(1039, "Order does not meet minimum amount for voucher", HttpStatus.BAD_REQUEST),
+    ORDER_NOT_FOUND(1040, "Order not found", HttpStatus.NOT_FOUND),
+    ORDER_ITEM_NOT_FOUND(1041, "Order item not found", HttpStatus.NOT_FOUND),
+    ORDER_NOT_BELONG_TO_USER(1042, "Order does not belong to user", HttpStatus.FORBIDDEN)
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
