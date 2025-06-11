@@ -7,6 +7,8 @@ import com.bookexchange.service.AuthorService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,14 +21,25 @@ public class AuthorController {
 
     AuthorService authorService;
 
-    // GET /authors - Lấy tất cả tác giả
-    @GetMapping
-    public ApiResponse<List<AuthorResponse>> getAllAuthors() {
-        return ApiResponse.<List<AuthorResponse>>builder()
-                .result(authorService.getAllAuthors())
+    // POST /authors - Tạo tác giả mới chỉ với tên
+    @PostMapping
+    public ApiResponse<AuthorResponse> createAuthor(@RequestBody AuthorRequest request) {
+        return ApiResponse.<AuthorResponse>builder()
+                .result(authorService.createAuthor(request))
+                .message("Author created successfully")
                 .build();
     }
 
+    // GET /authors - Lấy tất cả tác giả
+    @GetMapping
+    public ApiResponse<Page<AuthorResponse>> getAuthors(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.<Page<AuthorResponse>>builder()
+                .result(authorService.getAuthors(PageRequest.of(page, size)))
+                .build();
+    }
     // DELETE /authors/{id} - Xoá tác giả theo ID
     @DeleteMapping("/{authorId}")
     public ApiResponse<Void> deleteAuthor(@PathVariable Long authorId) {

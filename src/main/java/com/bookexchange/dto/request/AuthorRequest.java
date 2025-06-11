@@ -9,7 +9,6 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AuthorRequest {
+    Long id;
     String name;
-    String imageUrl;
-
 }

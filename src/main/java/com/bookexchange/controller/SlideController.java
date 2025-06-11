@@ -30,11 +30,6 @@ public class SlideController {
                 .build();
     }
 
-//    @GetMapping
-//    public ApiResponse<List<SlideResponse>> getSlideImages() {
-//        return ApiResponse.<List<SlideResponse>>builder().result(slideService.getSlideImages()).build();
-//    }
-
     @DeleteMapping("/{slideId}")
     public ApiResponse<String> deleteSlide(@PathVariable String slideId) {
         slideService.deleteSlide(slideId);

@@ -19,7 +19,6 @@ public class Author {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     String name;
-    String imageUrl;
     @ManyToMany(mappedBy = "authors")
     Set<ListedBook> books = new HashSet<>();
 }

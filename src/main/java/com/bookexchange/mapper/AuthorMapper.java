@@ -13,7 +13,6 @@ public class AuthorMapper {
         return AuthorResponse.builder()
                 .id(author.getId())
                 .name(author.getName())
-                .imageUrl(author.getImageUrl())
                 .build();
     }
 }

@@ -2,6 +2,7 @@ package com.bookexchange.service;
 
 import com.bookexchange.dto.request.AuthorRequest;
 import com.bookexchange.dto.response.AuthorResponse;
+import com.bookexchange.dto.response.SlideResponse;
 import com.bookexchange.entity.Author;
 import com.bookexchange.mapper.AuthorMapper;
 import com.bookexchange.repository.AuthorRepository;
@@ -9,6 +10,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,11 +27,22 @@ public class AuthorService {
     AuthorRepository authorRepository;
     AuthorMapper authorMapper;
 
-    public List<AuthorResponse> getAllAuthors() {
-        return authorRepository.findAll()
-                .stream()
-                .map(authorMapper::toAuthorResponse)
-                .collect(Collectors.toList());
+    public AuthorResponse createAuthor(AuthorRequest request) {
+        Author author = new Author();
+        author.setName(request.getName());
+        author = authorRepository.save(author);
+
+        return AuthorResponse.builder()
+                .id(author.getId())
+                .name(author.getName())
+                .build();
+    }
+
+    public Page<AuthorResponse> getAuthors(Pageable pageable) {
+        Pageable page = pageable;
+        return authorRepository
+                .findAll(page)
+                .map(authorMapper::toAuthorResponse);
     }
 
     public void deleteAuthor(Long authorId) {
@@ -47,8 +61,6 @@ public class AuthorService {
                 .orElseThrow(() -> new RuntimeException("Author not found"));
 
         author.setName(request.getName());
-        author.setImageUrl(request.getImageUrl());
-
         Author updatedAuthor = authorRepository.save(author);
         return authorMapper.toAuthorResponse(updatedAuthor);
     }
