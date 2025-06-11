@@ -20,5 +20,6 @@ public class CartResponse {
     BigDecimal price;
     int quantity;
     String sellerName;
+    long sellerId;
     int conditionNumber;
 }

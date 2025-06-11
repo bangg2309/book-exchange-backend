@@ -8,6 +8,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "order_items")
@@ -26,31 +28,20 @@ public class OrderItem {
     Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "book_id")
-    ListedBook book;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id")
     User seller;
-
-    Integer quantity;
-    BigDecimal price;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shop_voucher_id")
-    Voucher shopVoucher;
-
-    @Column(columnDefinition = "TEXT")
-    String message;
-
-    String shippingMethod;
+    
     BigDecimal shippingFee;
-    String estimatedDelivery;
-    BigDecimal subtotal;
-
+    BigDecimal totalAmount;
+    String note;
+    int status;
+    
+    @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    Set<OrderBookItem> bookItems = new HashSet<>();
+    
     @CreationTimestamp
     LocalDateTime createdAt;
-
+    
     @UpdateTimestamp
     LocalDateTime updatedAt;
 }
