@@ -2,6 +2,7 @@ package com.bookexchange.service;
 
 import com.bookexchange.dto.request.SlideRequest;
 import com.bookexchange.dto.response.SlideResponse;
+import com.bookexchange.dto.response.UserResponse;
 import com.bookexchange.entity.Slide;
 import com.bookexchange.mapper.SlideMapper;
 import com.bookexchange.repository.SlideImageRepository;
@@ -9,6 +10,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +26,14 @@ public class SlideService {
     SlideImageRepository slideImageRepository;
     SlideMapper slideMapper;
 
-    public List<SlideResponse> getAllSlide() {
+    public Page<SlideResponse> getSlides(Pageable pageable) {
+        Pageable page = pageable;
+        return slideImageRepository
+                .findAll(page)
+                .map(slideMapper::toSlideResponse);
+    }
+
+    public List<SlideResponse> getSlideImages() {
         return slideImageRepository.findAll().stream()
                 .map(slideMapper::toSlideResponse)
                 .toList();

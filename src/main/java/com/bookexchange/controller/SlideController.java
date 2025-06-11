@@ -8,6 +8,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 
@@ -19,9 +21,20 @@ public class SlideController {
     SlideService slideService;
 
     @GetMapping
-    public ApiResponse<List<SlideResponse>> getAllSlideImages() {
-        return ApiResponse.<List<SlideResponse>>builder().result(slideService.getAllSlide()).build();
+    public ApiResponse<Page<SlideResponse>> getSlides(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.<Page<SlideResponse>>builder()
+                .result(slideService.getSlides(PageRequest.of(page, size)))
+                .build();
     }
+
+//    @GetMapping
+//    public ApiResponse<List<SlideResponse>> getSlideImages() {
+//        return ApiResponse.<List<SlideResponse>>builder().result(slideService.getSlideImages()).build();
+//    }
+
     @DeleteMapping("/{slideId}")
     public ApiResponse<String> deleteSlide(@PathVariable String slideId) {
         slideService.deleteSlide(slideId);
