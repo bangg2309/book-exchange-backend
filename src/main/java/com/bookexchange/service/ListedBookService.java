@@ -12,8 +12,13 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
@@ -115,5 +120,38 @@ public class ListedBookService {
                 .orElseThrow(() -> new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND));
 
         return listedBookMapper.toListedBookDetailResponse(listedBook);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ListedBooksResponse> getBooks(
+            int page, 
+            int size, 
+            String sortBy, 
+            Sort.Direction direction,
+            String title,
+            String author,
+            Long categoryId,
+            Double minPrice,
+            Double maxPrice,
+            Integer condition,
+            Long schoolId) {
+
+        log.info("Getting books with filters: page={}, size={}, sortBy={}, direction={}",
+                page, size, sortBy, direction);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        try {
+            // Sử dụng truy vấn projection trực tiếp để tối ưu hiệu suất
+            // Kết quả trả về đã là ListedBooksResponse, không cần chuyển đổi
+            return listedBookRepository.findBooksWithFiltersProjection(
+                    title, author, categoryId, minPrice, maxPrice, condition, schoolId, pageable);
+        } catch (Exception e) {
+            log.error("Error using projection query, falling back to standard query", e);
+            
+            // Fallback: sử dụng truy vấn entity và chuyển đổi
+            Page<ListedBook> books = listedBookRepository.findBooksWithFilters(
+                    title, author, categoryId, minPrice, maxPrice, condition, schoolId, pageable);
+            
+            return books.map(listedBookMapper::toListedBooksResponse);
+        }
     }
 }

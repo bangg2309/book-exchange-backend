@@ -40,6 +40,7 @@ public class SecurityConfig {
             "/slides/{slideId}",
             "/authors",
             "/authors/{authorId}",
+            "/listed-books**",
     };
 
     @Autowired
