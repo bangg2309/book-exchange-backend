@@ -9,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -52,5 +53,17 @@ public class OrderController {
         return ApiResponse.<List<OrderResponse>>builder()
                 .result(orders)
                 .build();
+    }
+
+    /**
+     * Lấy thông tin đơn hàng theo ID
+     * 
+     * @param orderId ID của đơn hàng
+     * @return thông tin đơn hàng
+     */
+    @GetMapping("/{orderId}")
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long orderId) {
+        OrderResponse order = orderService.getOrderById(orderId);
+        return ResponseEntity.ok(order);
     }
 }

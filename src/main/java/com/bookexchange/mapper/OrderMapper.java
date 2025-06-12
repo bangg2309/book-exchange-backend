@@ -27,6 +27,7 @@ public class OrderMapper  {
         builder.userId(order.getUser().getId());
         builder.shippingAddress(toShippingAddressResponse(order.getShippingAddress()));
         builder.paymentMethod(order.getPaymentMethod());
+        builder.paymentTransactionId(order.getPaymentTransactionId());
         builder.shippingFee(order.getShippingFee());
         builder.discount(order.getDiscount());
         builder.totalPrice(order.getTotalPrice());

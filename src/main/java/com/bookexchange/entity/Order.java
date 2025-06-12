@@ -32,6 +32,9 @@ public class Order {
     ShippingAddress shippingAddress;
 
     String paymentMethod;
+    
+    // Mã giao dịch thanh toán từ VNPay
+    String paymentTransactionId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "platform_voucher_id")
