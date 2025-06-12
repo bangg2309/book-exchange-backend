@@ -36,6 +36,10 @@ public class SecurityConfig {
             "/authors",
             "/listed-books/latest",
             "/listed-books/{id}",
+            "/slides",
+            "/slides/{slideId}",
+            "/authors",
+            "/authors/{authorId}",
             "/listed-books**",
     };
 
