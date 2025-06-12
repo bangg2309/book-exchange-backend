@@ -1,6 +1,8 @@
 package com.bookexchange.service;
 
 import com.bookexchange.dto.request.ListedBookCreationRequest;
+import com.bookexchange.dto.response.BookManagementResponse;
+import com.bookexchange.dto.response.CategoryManagementResponse;
 import com.bookexchange.dto.response.ListedBookDetailResponse;
 import com.bookexchange.dto.response.ListedBooksResponse;
 import com.bookexchange.entity.*;
@@ -36,6 +38,11 @@ public class ListedBookService {
     UserRepository userRepository;
     SchoolRepository schoolRepository;
     ListedBookMapper listedBookMapper;
+
+    public Page<BookManagementResponse> getAllBooks(Pageable pageable) {
+        return listedBookRepository.findAll(pageable)
+                .map(listedBookMapper::toBookManagementResponse);
+    }
 
     public void createListedBook(ListedBookCreationRequest request) {
         var context = SecurityContextHolder.getContext();
@@ -154,4 +161,6 @@ public class ListedBookService {
             return books.map(listedBookMapper::toListedBooksResponse);
         }
     }
+
+
 }

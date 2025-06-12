@@ -1,8 +1,6 @@
 package com.bookexchange.mapper;
 
-import com.bookexchange.dto.response.ListedBookDetailResponse;
-import com.bookexchange.dto.response.ListedBooksResponse;
-import com.bookexchange.dto.response.ReviewResponse;
+import com.bookexchange.dto.response.*;
 import com.bookexchange.entity.Author;
 import com.bookexchange.entity.Category;
 import com.bookexchange.entity.Image;
@@ -27,6 +25,27 @@ public class ListedBookMapper {
                 .fullName(listedBook.getSeller().getFullName())
                 .schoolName(listedBook.getSchool() != null ? listedBook.getSchool().getName() : null)
                 .thumbnail(listedBook.getThumbnail())
+                .build();
+    }
+
+    public BookManagementResponse toBookManagementResponse(ListedBook listedBook) {
+        return BookManagementResponse.builder()
+                .id(listedBook.getId())
+                .title(listedBook.getTitle())
+                .conditionNumber(listedBook.getConditionNumber())
+                .priceNew(listedBook.getPriceNew())
+                .price(listedBook.getPrice())
+                .description(listedBook.getDescription())
+                .name(listedBook.getSeller().getFullName())
+                .school(listedBook.getSchool() != null ? listedBook.getSchool().getName() : null)
+                .thumbnail(listedBook.getThumbnail())
+                .author(listedBook.getAuthors().stream()
+                        .map(author -> AuthorResponse.builder()
+                                .id(author.getId())
+                                .name(author.getName())
+                                .build())
+                        .collect(Collectors.toList()))
+                .publisher(listedBook.getPublisher())
                 .build();
     }
 
