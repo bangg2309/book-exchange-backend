@@ -301,4 +301,51 @@ public class OrderService {
                 })
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Cập nhật trạng thái thanh toán của đơn hàng
+     * 
+     * @param orderId mã đơn hàng
+     * @param status trạng thái mới
+     * @param transactionId mã giao dịch từ cổng thanh toán
+     * @return đơn hàng sau khi cập nhật
+     */
+    @Transactional
+    public OrderResponse updateOrderPaymentStatus(Long orderId, int status, String transactionId) {
+        // Tìm đơn hàng
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        
+        // Cập nhật trạng thái và mã giao dịch
+        order.setStatus(status);
+        order.setPaymentTransactionId(transactionId);
+        
+        List<OrderItem> orderItems = new ArrayList<>(order.getOrderItems());
+        
+        // Cập nhật trạng thái các OrderItem
+        for (OrderItem item : orderItems) {
+            item.setStatus(status);
+            orderItemRepository.save(item);
+        }
+        
+        // Lưu đơn hàng
+        Order savedOrder = orderRepository.save(order);
+        
+        // Chuyển đổi thành OrderResponse
+        return orderMapper.toOrderResponse(savedOrder, orderItems);
+    }
+
+    /**
+     * Lấy thông tin đơn hàng theo ID
+     * 
+     * @param orderId ID đơn hàng
+     * @return thông tin đơn hàng
+     */
+    public OrderResponse getOrderById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        
+        List<OrderItem> orderItems = new ArrayList<>(order.getOrderItems());
+        return orderMapper.toOrderResponse(order, orderItems);
+    }
 }

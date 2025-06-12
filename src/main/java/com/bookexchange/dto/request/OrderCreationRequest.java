@@ -31,6 +31,8 @@ public class OrderCreationRequest {
     @NotNull
     BigDecimal totalPrice;
     
+    String returnUrl;
+    
     @NotEmpty
     List<OrderItemRequest> items;
 }

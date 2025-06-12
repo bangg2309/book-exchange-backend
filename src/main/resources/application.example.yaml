@@ -43,3 +43,14 @@ springdoc:
     disable-swagger-default-url: true
     display-request-duration: true
     filter: true
+
+# VNPAY Configuration
+vnpay:
+  version: 2.1.0
+  command: pay
+  tmnCode: YOUR_TMN_CODE
+  hashSecret: YOUR_HASH_SECRET
+  currCode: VND
+  payUrl: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  returnUrl: http://localhost:3000/payment/vnpay-return
+  apiUrl: https://sandbox.vnpayment.vn/merchant_webapi/api/transaction

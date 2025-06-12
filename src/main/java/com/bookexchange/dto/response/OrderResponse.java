@@ -17,6 +17,7 @@ public class OrderResponse {
     Long userId;
     ShippingAddressResponse shippingAddress;
     String paymentMethod;
+    String paymentTransactionId;
     String deliveryMethod;
     String note;
     String voucherCode;
