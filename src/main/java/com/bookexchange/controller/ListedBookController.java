@@ -2,6 +2,8 @@ package com.bookexchange.controller;
 
 import com.bookexchange.dto.request.ApiResponse;
 import com.bookexchange.dto.request.ListedBookCreationRequest;
+import com.bookexchange.dto.response.BookManagementResponse;
+import com.bookexchange.dto.response.CategoryManagementResponse;
 import com.bookexchange.dto.response.ListedBookDetailResponse;
 import com.bookexchange.dto.response.ListedBooksResponse;
 import com.bookexchange.service.ListedBookService;
@@ -11,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +40,16 @@ public class ListedBookController {
     public ApiResponse<List<ListedBooksResponse>> getLatestListedBooks() {
         return ApiResponse.<List<ListedBooksResponse>>builder()
                 .result(listedBookService.getLatestListedBooks())
+                .build();
+    }
+
+    @GetMapping("/all")
+    public ApiResponse<Page<BookManagementResponse>> getAllBooks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.<Page<BookManagementResponse>>builder()
+                .result(listedBookService.getAllBooks(PageRequest.of(page, size)))
                 .build();
     }
 
@@ -76,4 +89,6 @@ public class ListedBookController {
                 .result(books)
                 .build();
     }
+
+
 }
