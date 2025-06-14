@@ -13,6 +13,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,7 @@ import java.util.Map;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class AuthenticationController {
 
     AuthenticationService authenticationService;
@@ -43,8 +45,8 @@ public class AuthenticationController {
     private String clientId;
 
     @NonFinal
-    @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
-    private String redirectUri;
+    @Value("${client.url}")
+    private String clientUrl;
 
     @NonFinal
     @Value("${spring.security.oauth2.client.registration.google.scope}")
@@ -53,9 +55,13 @@ public class AuthenticationController {
 
     @GetMapping("/google/authorize")
     public ResponseEntity<Map<String, String>> getGoogleAuthUrl() {
+        String redirectUri = "http://localhost:8081/login/oauth2/code/google";
         String authUrl = String.format("%s?client_id=%s&redirect_uri=%s&response_type=code&scope=%s",
                 googleAuthUri, clientId, redirectUri, scope.replace(",", "%20"));
 
+        log.info("Generated Google Auth URL: {}", authUrl);
+        log.info("Using redirect URI: {}", redirectUri);
+        
         Map<String, String> response = new HashMap<>();
         response.put("redirectUrl", authUrl);
         return ResponseEntity.ok(response);
@@ -63,14 +69,16 @@ public class AuthenticationController {
 
     @GetMapping("/google/success")
     public ResponseEntity<User> handleGoogleCallback(@AuthenticationPrincipal OAuth2User principal) {
+        log.info("Google authentication successful. Principal: {}", principal);
         User user = authenticationService.loginWithGoogle(principal.getAttributes());
         return ResponseEntity.ok(user);
     }
 
     @GetMapping("/google/failure")
-    public ResponseEntity<Map<String, String>> handleAuthFailure() {
+    public ResponseEntity<Map<String, String>> handleAuthFailure(@RequestParam(required = false) String error) {
+        log.error("Google authentication failed. Error: {}", error);
         Map<String, String> response = new HashMap<>();
-        response.put("error", "Google authentication failed: invalid_request. Please check configuration.");
+        response.put("error", "Google authentication failed: " + (error != null ? error : "invalid_request") + ". Please check configuration.");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 

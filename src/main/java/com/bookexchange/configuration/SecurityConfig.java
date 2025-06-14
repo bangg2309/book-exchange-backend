@@ -53,17 +53,18 @@ public class SecurityConfig {
                     .anyRequest()
                     .authenticated());
 
-    httpSecurity.oauth2Login(
-            oauth2Login -> oauth2Login
-                    .redirectionEndpoint(endpoint -> endpoint.baseUri("/login/oauth2/code/google"))
-                    .defaultSuccessUrl("/auth/google/success", true)
-    );
-
     httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer
                     .decoder(customJwtDecoder)
                     .jwtAuthenticationConverter(jwtAuthenticationConverter()))
             .authenticationEntryPoint(new JwtAuthenticationEntryPoint()));
     httpSecurity.csrf(AbstractHttpConfigurer::disable);
+
+    httpSecurity.oauth2Login(
+            oauth2Login -> oauth2Login
+                    .redirectionEndpoint(endpoint -> endpoint.baseUri("/login/oauth2/code/google"))
+                    .defaultSuccessUrl("/auth/google/success", true)
+                    .failureUrl("/auth/google/failure")
+    );
 
     return httpSecurity.build();
   }
