@@ -1,6 +1,8 @@
 package com.bookexchange.service;
 
 import com.bookexchange.constant.PredefinedRole;
+import com.bookexchange.dto.request.ChangePasswordRequest;
+import com.bookexchange.dto.request.UpdateProfileRequest;
 import com.bookexchange.dto.request.UserCreationRequest;
 import com.bookexchange.dto.request.UserUpdateRequest;
 import com.bookexchange.dto.response.UserResponse;
@@ -106,5 +108,35 @@ public class UserService {
     public UserResponse getUser(String id) {
         return userMapper.toUserResponse(
                 userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)));
+    }
+
+    public UserResponse updateProfile(UpdateProfileRequest request) {
+        var context = SecurityContextHolder.getContext();
+        String name = context.getAuthentication().getName();
+
+        User user = userRepository.findByUsername(name).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        user.setFullName(request.getFullName());
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        if (request.getAvatar() != null && !request.getAvatar().isEmpty()) {
+            user.setAvatar(request.getAvatar());
+        }
+
+        return userMapper.toUserResponse(userRepository.save(user));
+    }
+
+    public void changePassword(ChangePasswordRequest request) {
+        var context = SecurityContextHolder.getContext();
+        String name = context.getAuthentication().getName();
+
+        User user = userRepository.findByUsername(name).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new AppException(ErrorCode.OLD_PASSWORD_INCORRECT);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 }

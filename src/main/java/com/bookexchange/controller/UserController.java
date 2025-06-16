@@ -1,8 +1,6 @@
 package com.bookexchange.controller;
 
-import com.bookexchange.dto.request.ApiResponse;
-import com.bookexchange.dto.request.UserCreationRequest;
-import com.bookexchange.dto.request.UserUpdateRequest;
+import com.bookexchange.dto.request.*;
 import com.bookexchange.dto.response.UserResponse;
 import com.bookexchange.service.UserService;
 import jakarta.validation.Valid;
@@ -64,5 +62,17 @@ public class UserController {
         return ApiResponse.<UserResponse>builder()
                 .result(userService.updateUser(userId, request))
                 .build();
+    }
+
+    @PutMapping("/update-profile")
+    ApiResponse<UserResponse> updateProfile(@RequestBody UpdateProfileRequest request) {
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.updateProfile(request))
+                .build();
+    }
+    @PutMapping("/change-password")
+    ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(request);
+        return ApiResponse.<Void>builder().build();
     }
 }

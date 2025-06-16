@@ -59,6 +59,17 @@ public class ListedBookController {
                 .result(listedBookService.getListedDetail(id))
                 .build();
     }
+
+    @GetMapping("seller/{sellerId}")
+    public ApiResponse<List<ListedBooksResponse>> getBooksBySellerId(@PathVariable Long sellerId) {
+
+        List<ListedBooksResponse> books = listedBookService.getBooksBySellerId(sellerId);
+        return ApiResponse.<List<ListedBooksResponse>>builder()
+                .result(books)
+                .build();
+    }
+
+
     
     @GetMapping
     public ApiResponse<Page<ListedBooksResponse>> getBooks(

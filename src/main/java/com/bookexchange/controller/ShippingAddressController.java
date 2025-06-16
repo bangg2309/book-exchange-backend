@@ -32,4 +32,28 @@ public class ShippingAddressController {
                 .result(response)
                 .build();
     }
+    
+    @PutMapping("/{id}")
+    public ApiResponse<ShippingAddressResponse> update(@PathVariable long id, @RequestBody ShippingAddressRequest request) {
+        ShippingAddressResponse response = shippingAddressService.update(id, request);
+        return ApiResponse.<ShippingAddressResponse>builder()
+                .result(response)
+                .build();
+    }
+    
+    @DeleteMapping("/{id}")
+    public ApiResponse<Boolean> delete(@PathVariable long id) {
+        boolean result = shippingAddressService.delete(id);
+        return ApiResponse.<Boolean>builder()
+                .result(result)
+                .build();
+    }
+    
+    @PutMapping("/{id}/default")
+    public ApiResponse<ShippingAddressResponse> setDefault(@PathVariable long id) {
+        ShippingAddressResponse response = shippingAddressService.setDefault(id);
+        return ApiResponse.<ShippingAddressResponse>builder()
+                .result(response)
+                .build();
+    }
 }
