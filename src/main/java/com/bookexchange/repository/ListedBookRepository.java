@@ -2,6 +2,7 @@ package com.bookexchange.repository;
 
 import com.bookexchange.dto.response.ListedBooksResponse;
 import com.bookexchange.entity.ListedBook;
+import com.bookexchange.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -65,4 +66,6 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
             @Param("condition") Integer condition,
             @Param("schoolId") Long schoolId,
             Pageable pageable);
+
+    List<ListedBook> findBySeller(User user);
 }
