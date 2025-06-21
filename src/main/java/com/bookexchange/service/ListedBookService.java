@@ -162,12 +162,23 @@ public class ListedBookService {
         }
     }
 
-
     public List<ListedBooksResponse> getBooksBySellerId(Long userId) {
-
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        List<ListedBook> listedBooks = listedBookRepository.findBySeller(user);
+
+        return listedBooks.stream()
+                .map(listedBookMapper::toListedBooksResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<ListedBooksResponse> getCurrentUserBooks() {
+        var context = SecurityContextHolder.getContext();
+        String username = context.getAuthentication().getName();
+        
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        
         List<ListedBook> listedBooks = listedBookRepository.findBySeller(user);
 
         return listedBooks.stream()

@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -110,7 +111,6 @@ public class OrderService {
                 voucherService.applyVoucher(request.getVoucherCode());
             } catch (AppException e) {
                 // Nếu voucher không hợp lệ, tiếp tục mà không áp dụng
-                log.warn("Invalid voucher: {}", e.getMessage());
                 request.setVoucherCode(null);
             }
         } else {
@@ -347,5 +347,35 @@ public class OrderService {
         
         List<OrderItem> orderItems = new ArrayList<>(order.getOrderItems());
         return orderMapper.toOrderResponse(order, orderItems);
+    }
+    
+    /**
+     * Lấy danh sách đơn bán của người dùng hiện tại
+     * 
+     * @return Danh sách đơn hàng mà người dùng hiện tại là người bán
+     */
+    public List<OrderResponse> getCurrentUserSellOrders() {
+        // Lấy thông tin người dùng hiện tại từ SecurityContext
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        
+        // Lấy danh sách đơn hàng của người bán
+        List<OrderItem> sellerItems = orderItemRepository.findBySellerId(currentUser.getId());
+        
+        // Nhóm theo đơn hàng
+        Map<Long, List<OrderItem>> orderItemsMap = sellerItems.stream()
+                .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
+        
+        // Tạo responses
+        List<OrderResponse> responses = orderItemsMap.values().stream()
+                .map(orderItems -> {
+                    Order order = orderItems.get(0).getOrder();
+                    return orderMapper.toOrderResponse(order, orderItems);
+                })
+                .collect(Collectors.toList());
+        
+        return responses;
     }
 }

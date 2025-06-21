@@ -34,4 +34,5 @@ public class ListedBookDetailResponse {
     String thumbnail;
     Set<String> images;
     LocalDateTime createdAt;
+    Integer status;
 }

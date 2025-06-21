@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ListedBookMapper {
 
+    private final ReviewMapper reviewMapper;
+
     public ListedBooksResponse toListedBooksResponse(ListedBook listedBook) {
         return ListedBooksResponse.builder()
                 .id(listedBook.getId())
@@ -25,6 +27,7 @@ public class ListedBookMapper {
                 .fullName(listedBook.getSeller().getFullName())
                 .schoolName(listedBook.getSchool() != null ? listedBook.getSchool().getName() : null)
                 .thumbnail(listedBook.getThumbnail())
+                .status(listedBook.getStatus())
                 .build();
     }
 
@@ -46,6 +49,7 @@ public class ListedBookMapper {
                                 .build())
                         .collect(Collectors.toList()))
                 .publisher(listedBook.getPublisher())
+                .status(listedBook.getStatus())
                 .build();
     }
 
@@ -55,6 +59,7 @@ public class ListedBookMapper {
                 .title(listedBook.getTitle())
                 .authors(listedBook.getAuthors().stream().map(Author::getName).collect(Collectors.toSet()))
                 .categories(listedBook.getCategories().stream().map(Category::getName).collect(Collectors.toSet()))
+                .reviews(listedBook.getReviews().stream().map(reviewMapper::toReviewResponse).collect(Collectors.toSet()))
                 .isbn(listedBook.getIsbn())
                 .language(listedBook.getLanguage())
                 .publishYear(listedBook.getPublishYear())
@@ -71,6 +76,7 @@ public class ListedBookMapper {
                 .thumbnail(listedBook.getThumbnail())
                 .images(listedBook.getImages().stream().map(Image::getImageUrl).collect(Collectors.toSet()))
                 .createdAt(listedBook.getCreatedAt())
+                .status(listedBook.getStatus())
                 .build();
     }
 }

@@ -62,15 +62,20 @@ public class ListedBookController {
 
     @GetMapping("seller/{sellerId}")
     public ApiResponse<List<ListedBooksResponse>> getBooksBySellerId(@PathVariable Long sellerId) {
-
         List<ListedBooksResponse> books = listedBookService.getBooksBySellerId(sellerId);
         return ApiResponse.<List<ListedBooksResponse>>builder()
                 .result(books)
                 .build();
     }
 
+    @GetMapping("/user/me")
+    public ApiResponse<List<ListedBooksResponse>> getCurrentUserBooks() {
+        List<ListedBooksResponse> books = listedBookService.getCurrentUserBooks();
+        return ApiResponse.<List<ListedBooksResponse>>builder()
+                .result(books)
+                .build();
+    }
 
-    
     @GetMapping
     public ApiResponse<Page<ListedBooksResponse>> getBooks(
             @RequestParam(defaultValue = "0") int page,
@@ -100,6 +105,5 @@ public class ListedBookController {
                 .result(books)
                 .build();
     }
-
 
 }
