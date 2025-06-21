@@ -14,6 +14,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -100,6 +101,17 @@ public class ListedBookController {
                 .result(books)
                 .build();
     }
+
+    @GetMapping("/pending")
+    public ApiResponse<Page<BookManagementResponse>> getPendingBooks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.<Page<BookManagementResponse>>builder()
+                .result(listedBookService.getPendingBooks(PageRequest.of(page, size)))
+                .build();
+    }
+
 
 
 }

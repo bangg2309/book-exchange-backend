@@ -174,4 +174,10 @@ public class ListedBookService {
                 .map(listedBookMapper::toListedBooksResponse)
                 .collect(Collectors.toList());
     }
+
+    public Page<BookManagementResponse> getPendingBooks(Pageable pageable) {
+        return listedBookRepository.findPendingBooks(pageable);
+
+    }
+
 }

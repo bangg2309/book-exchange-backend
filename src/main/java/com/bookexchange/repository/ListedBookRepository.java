@@ -1,5 +1,6 @@
 package com.bookexchange.repository;
 
+import com.bookexchange.dto.response.BookManagementResponse;
 import com.bookexchange.dto.response.ListedBooksResponse;
 import com.bookexchange.entity.ListedBook;
 import com.bookexchange.entity.User;
@@ -68,4 +69,18 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
             Pageable pageable);
 
     List<ListedBook> findBySeller(User user);
+
+    @Query("SELECT new com.bookexchange.dto.response.ListedBooksResponse(" +
+            "lb.id, lb.title, lb.priceNew, lb.price, lb.conditionNumber, " +
+            "lb.description, lb.thumbnail, lb.publisher, " +
+            "s.name, u.fullName, COALESCE((SELECT MIN(a.name) FROM lb.authors a), '')) " +
+            "FROM ListedBook lb " +
+            "JOIN lb.school s " +
+            "JOIN lb.seller u " +
+            "LEFT JOIN lb.authors a " +
+            "WHERE lb.status = 0 " +
+            "GROUP BY lb.id, lb.title, lb.priceNew, lb.price, lb.conditionNumber, " +
+            "lb.description, lb.thumbnail, lb.publisher, s.name, u.fullName")
+    Page<BookManagementResponse> findPendingBooks(Pageable pageable);
+
 }
