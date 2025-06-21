@@ -41,7 +41,7 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
     @Query("SELECT new com.bookexchange.dto.response.ListedBooksResponse(" +
            "lb.id, lb.title, lb.priceNew, lb.price, lb.conditionNumber, " +
            "lb.description, lb.thumbnail, lb.publisher, " +
-           "s.name, u.fullName, COALESCE((SELECT MIN(a.name) FROM lb.authors a), '')) " +
+           "s.name, u.fullName, COALESCE((SELECT MIN(a.name) FROM lb.authors a), ''), lb.status) " +
            "FROM ListedBook lb " +
            "JOIN lb.school s " +
            "JOIN lb.seller u " +
@@ -56,7 +56,7 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
            "AND (:condition IS NULL OR lb.conditionNumber = :condition) " +
            "AND (:schoolId IS NULL OR lb.school.id = :schoolId) " +
            "GROUP BY lb.id, lb.title, lb.priceNew, lb.price, lb.conditionNumber, " +
-           "lb.description, lb.thumbnail, lb.publisher, s.name, u.fullName")
+           "lb.description, lb.thumbnail, lb.publisher, s.name, u.fullName, lb.status")
     Page<ListedBooksResponse> findBooksWithFiltersProjection(
             @Param("title") String title,
             @Param("author") String author,

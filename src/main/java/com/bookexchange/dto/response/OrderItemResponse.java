@@ -23,4 +23,9 @@ public class OrderItemResponse {
     Integer status;
     List<OrderBookItemResponse> bookItems;
     LocalDateTime createdAt;
+    LocalDateTime updatedAt;
+    String paymentMethod;
+    String shippingAddress;
+    String buyerName;
+    String buyerPhone;
 } 

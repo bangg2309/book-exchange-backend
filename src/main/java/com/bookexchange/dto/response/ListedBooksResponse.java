@@ -22,11 +22,12 @@ public class ListedBooksResponse {
     String schoolName;
     String fullName;
     String author;
+    Integer status;
     
     // Constructor for JPQL projection
     public ListedBooksResponse(Long id, String title, BigDecimal priceNew, BigDecimal price, 
                               Integer conditionNumber, String description, String thumbnail, 
-                              String publisher, String schoolName, String fullName, String author) {
+                              String publisher, String schoolName, String fullName, String author, Integer status) {
         this.id = id;
         this.title = title;
         this.priceNew = priceNew;
@@ -38,5 +39,6 @@ public class ListedBooksResponse {
         this.schoolName = schoolName;
         this.fullName = fullName;
         this.author = author;
+        this.status = status;
     }
 }

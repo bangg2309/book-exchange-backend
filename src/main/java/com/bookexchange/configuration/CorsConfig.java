@@ -16,7 +16,7 @@ public class CorsConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**") // Áp dụng cho API
                         .allowedOrigins("http://localhost:3000, http://192.168.18.1:3000") // Chỉ cho phép frontend này
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Các method cho phép
+                        .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS") // Các method cho phép
                         .allowedHeaders("*") // Chấp nhận tất cả headers
                         .allowCredentials(true); // Hỗ trợ gửi cookie/session
             }

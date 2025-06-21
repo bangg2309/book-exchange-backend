@@ -27,4 +27,5 @@ public class BookManagementResponse {
     String school;
     String name;
     List<AuthorResponse> author;
+    Integer status;
 }
