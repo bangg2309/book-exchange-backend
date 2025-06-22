@@ -27,92 +27,92 @@ import java.util.List;
 @Slf4j
 public class ListedBookController {
 
-  ListedBookService listedBookService;
+    ListedBookService listedBookService;
 
-  @PostMapping
-  public ApiResponse<Void> createListedBook(@RequestBody @Valid ListedBookCreationRequest request) {
-    listedBookService.createListedBook(request);
-    return ApiResponse.<Void>builder()
-            .build();
-  }
+    @PostMapping
+    public ApiResponse<Void> createListedBook(@RequestBody @Valid ListedBookCreationRequest request) {
+        listedBookService.createListedBook(request);
+        return ApiResponse.<Void>builder()
+                .build();
+    }
 
-  @GetMapping("/latest")
-  public ApiResponse<List<ListedBooksResponse>> getLatestListedBooks() {
-    return ApiResponse.<List<ListedBooksResponse>>builder()
-            .result(listedBookService.getLatestListedBooks())
-            .build();
-  }
+    @GetMapping("/latest")
+    public ApiResponse<List<ListedBooksResponse>> getLatestListedBooks() {
+        return ApiResponse.<List<ListedBooksResponse>>builder()
+                .result(listedBookService.getLatestListedBooks())
+                .build();
+    }
 
-  @GetMapping("/all")
-  public ApiResponse<Page<BookManagementResponse>> getAllBooks(
-          @RequestParam(defaultValue = "0") int page,
-          @RequestParam(defaultValue = "10") int size
-  ) {
-    return ApiResponse.<Page<BookManagementResponse>>builder()
-            .result(listedBookService.getAllBooks(PageRequest.of(page, size)))
-            .build();
-  }
+    @GetMapping("/all")
+    public ApiResponse<Page<BookManagementResponse>> getAllBooks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.<Page<BookManagementResponse>>builder()
+                .result(listedBookService.getAllBooks(PageRequest.of(page, size)))
+                .build();
+    }
 
-  @GetMapping("/search")
-  public ApiResponse<List<ListedBooksResponse>> searchBook(
-          @RequestParam String query
-  ) {
-    return ApiResponse.<List<ListedBooksResponse>>builder()
-            .result(listedBookService.searchBook(query))
-            .build();
-  }
+    @GetMapping("/search")
+    public ApiResponse<List<ListedBooksResponse>> searchBook(
+            @RequestParam String query
+    ) {
+        return ApiResponse.<List<ListedBooksResponse>>builder()
+                .result(listedBookService.searchBook(query))
+                .build();
+    }
 
-  @GetMapping("{id}")
-  public ApiResponse<ListedBookDetailResponse> getListedDetail(@PathVariable Long id) {
-    return ApiResponse.<ListedBookDetailResponse>builder()
-            .result(listedBookService.getListedDetail(id))
-            .build();
-  }
+    @GetMapping("{id}")
+    public ApiResponse<ListedBookDetailResponse> getListedDetail(@PathVariable Long id) {
+        return ApiResponse.<ListedBookDetailResponse>builder()
+                .result(listedBookService.getListedDetail(id))
+                .build();
+    }
 
-  @GetMapping("seller/{sellerId}")
-  public ApiResponse<List<ListedBooksResponse>> getBooksBySellerId(@PathVariable Long sellerId) {
-    List<ListedBooksResponse> books = listedBookService.getBooksBySellerId(sellerId);
-    return ApiResponse.<List<ListedBooksResponse>>builder()
-            .result(books)
-            .build();
-  }
+    @GetMapping("seller/{sellerId}")
+    public ApiResponse<List<ListedBooksResponse>> getBooksBySellerId(@PathVariable Long sellerId) {
+        List<ListedBooksResponse> books = listedBookService.getBooksBySellerId(sellerId);
+        return ApiResponse.<List<ListedBooksResponse>>builder()
+                .result(books)
+                .build();
+    }
 
-  @GetMapping("/user/me")
-  public ApiResponse<List<ListedBooksResponse>> getCurrentUserBooks() {
-    List<ListedBooksResponse> books = listedBookService.getCurrentUserBooks();
-    return ApiResponse.<List<ListedBooksResponse>>builder()
-            .result(books)
-            .build();
-  }
+    @GetMapping("/user/me")
+    public ApiResponse<List<ListedBooksResponse>> getCurrentUserBooks() {
+        List<ListedBooksResponse> books = listedBookService.getCurrentUserBooks();
+        return ApiResponse.<List<ListedBooksResponse>>builder()
+                .result(books)
+                .build();
+    }
 
-  @GetMapping
-  public ApiResponse<Page<ListedBooksResponse>> getBooks(
-          @RequestParam(defaultValue = "0") int page,
-          @RequestParam(defaultValue = "10") int size,
-          @RequestParam(defaultValue = "createdAt") String sortBy,
-          @RequestParam(defaultValue = "desc") String sortDir,
-          @RequestParam(required = false) String title,
-          @RequestParam(required = false) String author,
-          @RequestParam(required = false) Long categoryId,
-          @RequestParam(required = false) Double minPrice,
-          @RequestParam(required = false) Double maxPrice,
-          @RequestParam(required = false) Integer condition,
-          @RequestParam(required = false) Long schoolId
-  ) {
-    log.info("Getting books with params: page={}, size={}, sortBy={}, sortDir={}, title={}, author={}, categoryId={}, minPrice={}, maxPrice={}, condition={}, schoolId={}",
-            page, size, sortBy, sortDir, title, author, categoryId, minPrice, maxPrice, condition, schoolId);
+    @GetMapping
+    public ApiResponse<Page<ListedBooksResponse>> getBooks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String author,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) Integer condition,
+            @RequestParam(required = false) Long schoolId
+    ) {
+        log.info("Getting books with params: page={}, size={}, sortBy={}, sortDir={}, title={}, author={}, categoryId={}, minPrice={}, maxPrice={}, condition={}, schoolId={}",
+                page, size, sortBy, sortDir, title, author, categoryId, minPrice, maxPrice, condition, schoolId);
 
-    Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ?
-            Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ?
+                Sort.Direction.ASC : Sort.Direction.DESC;
 
-    Page<ListedBooksResponse> books = listedBookService.getBooks(
-            page, size, sortBy, direction, title, author,
-            categoryId, minPrice, maxPrice, condition, schoolId);
+        Page<ListedBooksResponse> books = listedBookService.getBooks(
+                page, size, sortBy, direction, title, author,
+                categoryId, minPrice, maxPrice, condition, schoolId);
 
-    return ApiResponse.<Page<ListedBooksResponse>>builder()
-            .code(HttpStatus.OK.value())
-            .result(books)
-            .build();
-  }
+        return ApiResponse.<Page<ListedBooksResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .result(books)
+                .build();
+    }
 
 }
