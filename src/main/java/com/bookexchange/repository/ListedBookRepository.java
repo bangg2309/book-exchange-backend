@@ -13,7 +13,7 @@ import java.util.List;
 
 public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
     List<ListedBook> findTop4ByStatusOrderByCreatedAtDesc(Integer status);
-    
+
     // Truy vấn tùy chỉnh để lấy sách với các điều kiện lọc
     @Query("SELECT lb FROM ListedBook lb " +
            "LEFT JOIN lb.authors a " +
@@ -36,7 +36,7 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
             @Param("condition") Integer condition,
             @Param("schoolId") Long schoolId,
             Pageable pageable);
-    
+
     // Truy vấn DTO projection cho hiệu suất tốt hơn
     @Query("SELECT new com.bookexchange.dto.response.ListedBooksResponse(" +
            "lb.id, lb.title, lb.priceNew, lb.price, lb.conditionNumber, " +
@@ -68,7 +68,7 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
             Pageable pageable);
 
     List<ListedBook> findBySeller(User user);
-    
+
     @Query("SELECT lb FROM ListedBook lb JOIN lb.categories c " +
            "WHERE lb.status = 1 AND lb.id <> :bookId AND c.id IN :categoryIds " +
            "GROUP BY lb.id " +
@@ -82,10 +82,29 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
      * Tìm sách theo trạng thái với phân trang
      */
     Page<ListedBook> findByStatus(Integer status, Pageable pageable);
-    
+
     /**
      * Đếm số lượng sách theo trạng thái
      */
     @Query(value = "SELECT COUNT(*) FROM listed_books WHERE status = :status", nativeQuery = true)
     long countByStatus(@Param("status") int status);
+
+    @Query("SELECT new com.bookexchange.dto.response.ListedBooksResponse(" +
+           "lb.id, lb.title, lb.priceNew, lb.price, lb.conditionNumber, " +
+           "lb.description, lb.thumbnail, lb.publisher, " +
+           "s.name, u.fullName, COALESCE((SELECT MIN(a.name) FROM lb.authors a), ''), lb.status) " +
+           "FROM ListedBook lb " +
+           "JOIN lb.school s " +
+           "JOIN lb.seller u " +
+           "LEFT JOIN lb.authors a " +
+           "LEFT JOIN lb.categories c " +
+//         "WHERE lb.status = 1 " +
+           "WHERE" +
+           "(LOWER(lb.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "EXISTS (SELECT 1 FROM lb.authors auth WHERE LOWER(auth.name) LIKE LOWER(CONCAT('%', :query, '%'))) OR " +
+           "EXISTS (SELECT 1 FROM lb.categories cat WHERE LOWER(cat.name) LIKE LOWER(CONCAT('%', :query, '%'))) OR " +
+           "LOWER(s.name) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+           "GROUP BY lb.id, lb.title, lb.priceNew, lb.price, lb.conditionNumber, " +
+           "lb.description, lb.thumbnail, lb.publisher, s.name, u.fullName, lb.status")
+    List<ListedBooksResponse> searchBook(@Param("query") String query);
 }

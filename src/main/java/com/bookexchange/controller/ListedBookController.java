@@ -53,6 +53,15 @@ public class ListedBookController {
                 .build();
     }
 
+    @GetMapping("/search")
+    public ApiResponse<List<ListedBooksResponse>> searchBook(
+            @RequestParam String query
+    ) {
+        return ApiResponse.<List<ListedBooksResponse>>builder()
+                .result(listedBookService.searchBook(query))
+                .build();
+    }
+
     @GetMapping("{id}")
     public ApiResponse<ListedBookDetailResponse> getListedDetail(@PathVariable Long id) {
         return ApiResponse.<ListedBookDetailResponse>builder()
@@ -100,14 +109,14 @@ public class ListedBookController {
     ) {
         log.info("Getting books with params: page={}, size={}, sortBy={}, sortDir={}, title={}, author={}, categoryId={}, minPrice={}, maxPrice={}, condition={}, schoolId={}",
                 page, size, sortBy, sortDir, title, author, categoryId, minPrice, maxPrice, condition, schoolId);
-        
-        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? 
+
+        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ?
                 Sort.Direction.ASC : Sort.Direction.DESC;
-        
+
         Page<ListedBooksResponse> books = listedBookService.getBooks(
-                page, size, sortBy, direction, title, author, 
+                page, size, sortBy, direction, title, author,
                 categoryId, minPrice, maxPrice, condition, schoolId);
-        
+
         return ApiResponse.<Page<ListedBooksResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .result(books)

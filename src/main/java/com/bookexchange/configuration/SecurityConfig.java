@@ -36,6 +36,7 @@ public class SecurityConfig {
             "/authors",
             "/listed-books/latest",
             "/listed-books/{id}",
+            "/listed-books/search",
             "/slides",
             "/slides/{slideId}",
             "/authors",
@@ -52,7 +53,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
-                .cors(cors -> {})
+                .cors(cors -> {
+                })
                 .authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_ENDPOINTS)
                         .permitAll()
                         .anyRequest()

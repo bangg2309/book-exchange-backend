@@ -40,8 +40,7 @@ public class ListedBookService {
     ListedBookMapper listedBookMapper;
 
     public Page<BookManagementResponse> getAllBooks(Pageable pageable) {
-        return listedBookRepository.findAll(pageable)
-                .map(listedBookMapper::toBookManagementResponse);
+        return listedBookRepository.findAll(pageable).map(listedBookMapper::toBookManagementResponse);
     }
 
     public void createListedBook(ListedBookCreationRequest request) {
@@ -52,22 +51,13 @@ public class ListedBookService {
         User seller = userRepository.findByUsername(name).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         // Xử lý authors và categories như code hiện tại của bạn
-        Set<Author> authors = request.getAuthors().stream()
-                .map(authorName ->
-                        authorRepository.findByName(authorName).orElseGet(() -> {
-                            Author newAuthor = new Author();
-                            newAuthor.setName(authorName);
-                            return authorRepository.save(newAuthor);
-                        })
-                )
-                .collect(Collectors.toSet());
+        Set<Author> authors = request.getAuthors().stream().map(authorName -> authorRepository.findByName(authorName).orElseGet(() -> {
+            Author newAuthor = new Author();
+            newAuthor.setName(authorName);
+            return authorRepository.save(newAuthor);
+        })).collect(Collectors.toSet());
 
-        Set<Category> categories = request.getCategoriesId().stream()
-                .map(categoryId ->
-                        categoryRepository.findById(categoryId)
-                                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND))
-                )
-                .collect(Collectors.toSet());
+        Set<Category> categories = request.getCategoriesId().stream().map(categoryId -> categoryRepository.findById(categoryId).orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND))).collect(Collectors.toSet());
 
         // Tạo ListedBook nhưng chưa thêm images
         ListedBook listedBook = new ListedBook();
@@ -88,23 +78,19 @@ public class ListedBookService {
         listedBook.setPageCount(request.getPageCount());
         listedBook.setLanguage(request.getLanguage());
         listedBook.setThumbnail(request.getThumbnail());
-        listedBook.setSchool(schoolRepository.findById(
-                request.getSchoolId()).orElseThrow(()
-                -> new AppException(ErrorCode.SCHOOL_NOT_FOUND)));
+        listedBook.setSchool(schoolRepository.findById(request.getSchoolId()).orElseThrow(() -> new AppException(ErrorCode.SCHOOL_NOT_FOUND)));
 
         // Lưu ListedBook trước để có ID
         ListedBook savedBook = listedBookRepository.save(listedBook);
         log.info("Saved ListedBook with ID: {}", savedBook.getId());
 
         // Bây giờ tạo và liên kết images
-        Set<Image> images = request.getImagesUrl().stream()
-                .map(imageUrl -> {
-                    Image image = new Image();
-                    image.setImageUrl(imageUrl);
-                    image.setListedBook(savedBook); // Liên kết với book đã có ID
-                    return image;
-                })
-                .collect(Collectors.toSet());
+        Set<Image> images = request.getImagesUrl().stream().map(imageUrl -> {
+            Image image = new Image();
+            image.setImageUrl(imageUrl);
+            image.setListedBook(savedBook); // Liên kết với book đã có ID
+            return image;
+        }).collect(Collectors.toSet());
 
         // Gán images cho book đã lưu
         savedBook.setImages(images);
@@ -117,14 +103,11 @@ public class ListedBookService {
     public List<ListedBooksResponse> getLatestListedBooks() {
         List<ListedBook> listedbooks = listedBookRepository.findTop4ByStatusOrderByCreatedAtDesc(1);
 
-        return listedbooks.stream()
-                .map(listedBookMapper::toListedBooksResponse)
-                .collect(Collectors.toList());
+        return listedbooks.stream().map(listedBookMapper::toListedBooksResponse).collect(Collectors.toList());
     }
 
     public ListedBookDetailResponse getListedDetail(Long id) {
-        ListedBook listedBook = listedBookRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND));
+        ListedBook listedBook = listedBookRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND));
 
         return listedBookMapper.toListedBookDetailResponse(listedBook);
     }
@@ -161,60 +144,49 @@ public class ListedBookService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ListedBooksResponse> getBooks(
-            int page, 
-            int size, 
-            String sortBy, 
-            Sort.Direction direction,
-            String title,
-            String author,
-            Long categoryId,
-            Double minPrice,
-            Double maxPrice,
-            Integer condition,
-            Long schoolId) {
+    public Page<ListedBooksResponse> getBooks(int page, int size, String sortBy, Sort.Direction direction, String title, String author, Long categoryId, Double minPrice, Double maxPrice, Integer condition, Long schoolId) {
 
-        log.info("Getting books with filters: page={}, size={}, sortBy={}, direction={}",
-                page, size, sortBy, direction);
+        log.info("Getting books with filters: page={}, size={}, sortBy={}, direction={}", page, size, sortBy, direction);
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
         try {
             // Sử dụng truy vấn projection trực tiếp để tối ưu hiệu suất
             // Kết quả trả về đã là ListedBooksResponse, không cần chuyển đổi
-            return listedBookRepository.findBooksWithFiltersProjection(
-                    title, author, categoryId, minPrice, maxPrice, condition, schoolId, pageable);
+            return listedBookRepository.findBooksWithFiltersProjection(title, author, categoryId, minPrice, maxPrice, condition, schoolId, pageable);
         } catch (Exception e) {
             log.error("Error using projection query, falling back to standard query", e);
-            
+
             // Fallback: sử dụng truy vấn entity và chuyển đổi
-            Page<ListedBook> books = listedBookRepository.findBooksWithFilters(
-                    title, author, categoryId, minPrice, maxPrice, condition, schoolId, pageable);
-            
+            Page<ListedBook> books = listedBookRepository.findBooksWithFilters(title, author, categoryId, minPrice, maxPrice, condition, schoolId, pageable);
+
             return books.map(listedBookMapper::toListedBooksResponse);
         }
     }
 
     public List<ListedBooksResponse> getBooksBySellerId(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         List<ListedBook> listedBooks = listedBookRepository.findBySeller(user);
 
-        return listedBooks.stream()
-                .map(listedBookMapper::toListedBooksResponse)
-                .collect(Collectors.toList());
+        return listedBooks.stream().map(listedBookMapper::toListedBooksResponse).collect(Collectors.toList());
     }
 
     public List<ListedBooksResponse> getCurrentUserBooks() {
         var context = SecurityContextHolder.getContext();
         String username = context.getAuthentication().getName();
-        
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        
+
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
         List<ListedBook> listedBooks = listedBookRepository.findBySeller(user);
 
-        return listedBooks.stream()
-                .map(listedBookMapper::toListedBooksResponse)
-                .collect(Collectors.toList());
+        return listedBooks.stream().map(listedBookMapper::toListedBooksResponse).collect(Collectors.toList());
+    }
+
+    public List<ListedBooksResponse> searchBook(String query) {
+        log.info("Searching books with query: {}", query);
+        List<ListedBooksResponse> listedBooks = listedBookRepository.searchBook(query);
+        if (listedBooks.isEmpty()) {
+            throw new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND);
+        }
+        return listedBooks;
     }
 
 
