@@ -216,4 +216,30 @@ public class ListedBookService {
                 .map(listedBookMapper::toListedBooksResponse)
                 .collect(Collectors.toList());
     }
+
+
+    public long countTotalBooks() {
+        return listedBookRepository.count();
+    }
+    
+
+    public long countTotalCategories() {
+        return categoryRepository.count();
+    }
+
+    /**
+     * Lấy danh sách sách mới nhất đã được phê duyệt với số lượng cụ thể
+     * 
+     * @param limit Số lượng sách cần lấy
+     * @return Danh sách đối tượng ListedBooksResponse
+     */
+    public List<ListedBooksResponse> getRecentApprovedBooks(int limit) {
+        // Lấy sách có status = 1 (đã được phê duyệt), sắp xếp theo thời gian tạo giảm dần
+        PageRequest pageRequest = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<ListedBook> books = listedBookRepository.findByStatus(1, pageRequest);
+        
+        return books.getContent().stream()
+                .map(listedBookMapper::toListedBooksResponse)
+                .collect(Collectors.toList());
+    }
 }
