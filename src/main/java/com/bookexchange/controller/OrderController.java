@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -86,9 +87,12 @@ public class OrderController {
     public ApiResponse<Page<OrderResponse>> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String search
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "createdAt") String sort,
+            @RequestParam(defaultValue = "DESC") String direction
     ) {
-        Page<OrderResponse> orders = orderService.getAllOrders(PageRequest.of(page, size), search);
+        Sort sortObj = Sort.by(Sort.Direction.fromString(direction), sort);
+        Page<OrderResponse> orders = orderService.getAllOrders(PageRequest.of(page, size, sortObj), search);
         return ApiResponse.<Page<OrderResponse>>builder()
                 .result(orders)
                 .build();

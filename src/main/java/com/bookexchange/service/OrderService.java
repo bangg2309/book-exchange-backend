@@ -4,6 +4,7 @@ import com.bookexchange.dto.request.OrderBookItemRequest;
 import com.bookexchange.dto.request.OrderCreationRequest;
 import com.bookexchange.dto.request.OrderItemRequest;
 import com.bookexchange.dto.response.OrderResponse;
+import com.bookexchange.dto.response.RevenueStatsDTO;
 import com.bookexchange.entity.*;
 import com.bookexchange.exception.AppException;
 import com.bookexchange.exception.ErrorCode;
@@ -22,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -479,5 +481,127 @@ public class OrderService {
             log.error("Error deleting order: {}", e.getMessage());
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
+    }
+
+    public long countTotalOrders() {
+        return orderRepository.count();
+    }
+
+    /**
+     * Lấy dữ liệu doanh thu theo khoảng thời gian
+     * 
+     * @param period Khoảng thời gian (day, week, month, year)
+     * @return Object chứa dữ liệu doanh thu
+     */
+    public RevenueStatsDTO getRevenueStats(String period) {
+        LocalDateTime startDate;
+        LocalDateTime endDate = LocalDateTime.now();
+        
+        // Xác định khoảng thời gian dựa trên period
+        switch (period.toLowerCase()) {
+            case "day":
+                // Lấy 30 ngày gần nhất
+                startDate = endDate.minusDays(30);
+                break;
+            case "week":
+                // Lấy 12 tuần gần nhất
+                startDate = endDate.minusWeeks(12);
+                break;
+            case "month":
+                // Lấy 12 tháng gần nhất
+                startDate = endDate.minusMonths(12);
+                break;
+            case "year":
+                // Lấy 5 năm gần nhất
+                startDate = endDate.minusYears(5);
+                break;
+            default:
+                // Mặc định lấy 12 tháng
+                startDate = endDate.minusMonths(12);
+                period = "month";
+        }
+        
+        log.info("Fetching revenue stats for period: {}, from: {} to: {}", period, startDate, endDate);
+        
+        // Lấy tất cả đơn hàng đã xử lý hoặc hoàn thành (status >= 2)
+        // Trạng thái đơn hàng: 1=PENDING, 2=PROCESSING, 3=SHIPPED, 4=DELIVERED, 5=CANCELLED, 6=REFUNDED
+        int minOrderStatus = 2; // PROCESSING: đã xử lý/đã thanh toán
+        
+        // Tổng hợp dữ liệu doanh thu theo khoảng thời gian
+        List<Object[]> revenueData;
+        
+        switch (period.toLowerCase()) {
+            case "day":
+                revenueData = orderRepository.getRevenueByDay(startDate, endDate, minOrderStatus);
+                break;
+            case "week":
+                revenueData = orderRepository.getRevenueByWeek(startDate, endDate, minOrderStatus);
+                break;
+            case "month":
+                revenueData = orderRepository.getRevenueByMonth(startDate, endDate, minOrderStatus);
+                break;
+            case "year":
+                revenueData = orderRepository.getRevenueByYear(startDate, endDate, minOrderStatus);
+                break;
+            default:
+                revenueData = orderRepository.getRevenueByMonth(startDate, endDate, minOrderStatus);
+        }
+        
+        log.info("Revenue data size: {}", revenueData.size());
+        
+        // Chuyển đổi dữ liệu sang định dạng phù hợp
+        List<String> labels = new ArrayList<>();
+        List<Double> data = new ArrayList<>();
+        
+        for (Object[] row : revenueData) {
+            String label = String.valueOf(row[0]); // Chuyển đổi an toàn thành String
+            BigDecimal revenue;
+            
+            try {
+                // Xử lý revenue một cách an toàn
+                if (row[1] instanceof BigDecimal) {
+                    revenue = (BigDecimal) row[1];
+                } else if (row[1] instanceof Number) {
+                    revenue = new BigDecimal(((Number) row[1]).doubleValue());
+                } else {
+                    revenue = new BigDecimal(String.valueOf(row[1]));
+                }
+                
+                log.debug("Raw data: {} - {}", label, revenue);
+                
+                // Chuyển đổi nhãn thời gian cho người dùng
+                switch (period.toLowerCase()) {
+                    case "month":
+                        // Chuyển từ "2023-5" thành "Tháng 5, 2023"
+                        String[] parts = label.split("-");
+                        if (parts.length == 2) {
+                            label = "Tháng " + parts[1] + ", " + parts[0];
+                        }
+                        break;
+                    case "week":
+                        // Chuyển từ "2023-22" thành "Tuần 22, 2023"
+                        parts = label.split("-");
+                        if (parts.length == 2) {
+                            label = "Tuần " + parts[1] + ", " + parts[0];
+                        }
+                        break;
+                }
+                
+                labels.add(label);
+                // Chuyển BigDecimal sang nghìn đồng (kVND)
+                data.add(revenue.divide(new BigDecimal(1000), RoundingMode.HALF_UP).doubleValue());
+            } catch (Exception e) {
+                log.error("Error processing revenue data: {} - {}", row[0], row[1], e);
+            }
+        }
+        
+        log.info("Processed revenue data: labels={}, data={}", labels, data);
+        
+        // Tạo đối tượng kết quả
+        return RevenueStatsDTO.builder()
+                .labels(labels)
+                .data(data)
+                .period(period)
+                .build();
     }
 }
