@@ -4,7 +4,9 @@ import com.bookexchange.constant.PredefinedRole;
 import com.bookexchange.dto.request.*;
 import com.bookexchange.dto.response.AuthenticationResponse;
 import com.bookexchange.dto.response.IntrospectResponse;
+import com.bookexchange.dto.response.UserInfo;
 import com.bookexchange.entity.InvalidatedToken;
+import com.bookexchange.entity.Permission;
 import com.bookexchange.entity.Role;
 import com.bookexchange.entity.User;
 import com.bookexchange.entity.VerificationToken;
@@ -28,6 +30,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import sendinblue.ApiException;
 
@@ -78,6 +81,22 @@ public class AuthenticationService {
         return IntrospectResponse.builder().valid(isValid).build();
     }
 
+    /**
+     * Lấy thông tin người dùng để trả về trong response
+     * @param user Đối tượng người dùng
+     * @return Thông tin người dùng
+     */
+    @Transactional
+    protected UserInfo getUserInfo(User user) {
+        return UserInfo.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .roles(user.getRoles())
+                .build();
+    }
+
+    @Transactional
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         var user = userRepository
@@ -99,9 +118,13 @@ public class AuthenticationService {
         var accessToken = generateToken(user, false);
         var refreshToken = generateToken(user, true);
 
-        return AuthenticationResponse.builder().accessToken(accessToken)
+        return AuthenticationResponse.builder()
+                .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .authenticated(true).build();
+                .authenticated(true)
+                .userInfo(getUserInfo(user))
+                .expiresIn(VALID_DURATION)
+                .build();
     }
 
     public void register(RegisterRequest request) throws ApiException {
@@ -175,6 +198,7 @@ public class AuthenticationService {
         }
     }
 
+    @Transactional
     public AuthenticationResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException {
         if (request.getRefreshToken() == null || request.getRefreshToken().trim().isEmpty()) {
             throw new AppException(ErrorCode.INVALID_TOKEN);
@@ -234,9 +258,26 @@ public class AuthenticationService {
         }
     }
 
+    /**
+     * Tạo token cho người dùng đăng nhập qua OAuth
+     * @param user Người dùng đã xác thực
+     * @return Response chứa token và thông tin người dùng
+     */
+    @Transactional
+    public AuthenticationResponse authenticateOAuth2User(User user) {
+        var accessToken = generateToken(user, false);
+        var refreshToken = generateToken(user, true);
+
+        return AuthenticationResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .authenticated(true)
+                .userInfo(getUserInfo(user))
+                .expiresIn(VALID_DURATION)
+                .build();
+    }
+
     private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
-
-
         JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
 
         SignedJWT signedJWT = SignedJWT.parse(token);
@@ -253,16 +294,21 @@ public class AuthenticationService {
         return signedJWT;
     }
 
+    @Transactional
     private String buildScope(User user) {
-        StringJoiner stringJoiner = new StringJoiner(" ");
-
-        if (!CollectionUtils.isEmpty(user.getRoles()))
-            user.getRoles().forEach(role -> {
-                stringJoiner.add("ROLE_" + role.getName());
-                if (!CollectionUtils.isEmpty(role.getPermissions()))
-                    role.getPermissions().forEach(permission -> stringJoiner.add(permission.getName()));
-            });
-
-        return stringJoiner.toString();
+        StringJoiner scope = new StringJoiner(" ");
+        if (user.getRoles() != null) {
+            for (Role role : user.getRoles()) {
+                scope.add("ROLE_" + role.getName());
+                
+                // Lấy permissions trong cùng phiên Hibernate
+                if (role.getPermissions() != null) {
+                    for (Permission permission : role.getPermissions()) {
+                        scope.add(permission.getName());
+                    }
+                }
+            }
+        }
+        return scope.toString();
     }
 }
