@@ -77,4 +77,15 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
             @Param("bookId") Long bookId,
             @Param("categoryIds") List<Long> categoryIds,
             Pageable pageable);
+
+    /**
+     * Tìm sách theo trạng thái với phân trang
+     */
+    Page<ListedBook> findByStatus(Integer status, Pageable pageable);
+    
+    /**
+     * Đếm số lượng sách theo trạng thái
+     */
+    @Query(value = "SELECT COUNT(*) FROM listed_books WHERE status = :status", nativeQuery = true)
+    long countByStatus(@Param("status") int status);
 }
