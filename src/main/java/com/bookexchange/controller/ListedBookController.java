@@ -60,6 +60,14 @@ public class ListedBookController {
                 .build();
     }
 
+    @GetMapping("{id}/related")
+    public ApiResponse<List<ListedBooksResponse>> getRelatedBooks(@PathVariable Long id) {
+        List<ListedBooksResponse> relatedBooks = listedBookService.getRelatedBooks(id);
+        return ApiResponse.<List<ListedBooksResponse>>builder()
+                .result(relatedBooks)
+                .build();
+    }
+
     @GetMapping("seller/{sellerId}")
     public ApiResponse<List<ListedBooksResponse>> getBooksBySellerId(@PathVariable Long sellerId) {
         List<ListedBooksResponse> books = listedBookService.getBooksBySellerId(sellerId);

@@ -13,9 +13,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.net.URLEncoder;
 
 @Configuration
 public class VNPayConfig {
+    private static final Logger log = LoggerFactory.getLogger(VNPayConfig.class);
+
     @Value("${vnpay.version}")
     private String vnpVersion;
 
@@ -127,7 +132,7 @@ public class VNPayConfig {
     }
 
     /**
-     * PHIÊN BẢN ĐÃ SỬA - Hash tất cả các fields theo đúng format VNPay
+     * Hash tất cả các fields theo đúng format VNPay
      */
     public String hashAllFields(Map<String, String> fields) {
         List<String> fieldNames = new ArrayList<>(fields.keySet());
@@ -141,30 +146,20 @@ public class VNPayConfig {
             if ((fieldValue != null) && (fieldValue.length() > 0)) {
                 sb.append(fieldName);
                 sb.append('=');
-                sb.append(fieldValue);
-
-                // QUAN TRỌNG: Chỉ thêm '&' nếu còn phần tử tiếp theo VÀ phần tử đó có giá trị
+                try {
+                    sb.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString()));
+                } catch (Exception e) {
+                    sb.append(fieldValue);
+                }
+                
                 if (itr.hasNext()) {
-                    // Kiểm tra xem còn field nào có giá trị không
-                    boolean hasMoreValidFields = false;
-                    Iterator<String> tempItr = fieldNames.listIterator(fieldNames.indexOf(fieldName) + 1);
-                    while (tempItr.hasNext()) {
-                        String nextField = tempItr.next();
-                        String nextValue = fields.get(nextField);
-                        if (nextValue != null && nextValue.length() > 0) {
-                            hasMoreValidFields = true;
-                            break;
-                        }
-                    }
-                    if (hasMoreValidFields) {
-                        sb.append('&');
-                    }
+                    sb.append('&');
                 }
             }
         }
 
         String hashData = sb.toString();
-        System.out.println("Hash data: " + hashData); // Debug log
+        log.info("Hash data: " + hashData); // Using log instead of System.out.println
         return hmacSHA512(vnpHashSecret, hashData);
     }
 }
