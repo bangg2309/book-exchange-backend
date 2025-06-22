@@ -39,13 +39,21 @@ public class AuthenticationController {
         return ResponseEntity.ok(ApiResponse.<Void>builder().build());
     }
 
-    @GetMapping("/verify-email")
-    public ResponseEntity verify(@RequestParam VerificationEmailRequest token) {
-        authenticationService.verifyEmail(token);
-        return ResponseEntity.ok("Email verified successfully");
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@RequestBody @Valid AuthenticationRequest request) throws ApiException {
+        authenticationService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.<Void>builder().build());
     }
 
-
+    @GetMapping("/verify-email")
+    public ResponseEntity verify(@RequestParam String token,
+                                 @RequestParam(defaultValue = "", required = false) String action) {
+        VerificationEmailRequest request = new VerificationEmailRequest();
+        request.setToken(token);
+        request.setAction(action);
+        authenticationService.verifyEmail(request);
+        return ResponseEntity.ok("Email verified successfully");
+    }
 
     @Operation(summary = "Introspect an access token", description = "Verify if the provided access token is valid and retrieve its metadata.")
     @PostMapping("/introspect")

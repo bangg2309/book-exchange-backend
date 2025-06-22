@@ -20,6 +20,7 @@ public class VerificationToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     long id;
     String token;
+    String temporaryPassword;
     @ManyToOne
     @JoinColumn(name = "user_id")
     User user;

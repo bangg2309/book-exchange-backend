@@ -1,5 +1,6 @@
 package com.bookexchange.service;
 
+import com.bookexchange.constant.AuthenticationAction;
 import com.bookexchange.constant.PredefinedRole;
 import com.bookexchange.dto.request.*;
 import com.bookexchange.dto.response.AuthenticationResponse;
@@ -16,11 +17,13 @@ import com.bookexchange.repository.InvalidatedTokenRepository;
 import com.bookexchange.repository.RoleRepository;
 import com.bookexchange.repository.UserRepository;
 import com.bookexchange.repository.VerificationTokenRepository;
+import com.bookexchange.utils.RandomUtils;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -83,6 +86,7 @@ public class AuthenticationService {
 
     /**
      * Lấy thông tin người dùng để trả về trong response
+     *
      * @param user Đối tượng người dùng
      * @return Thông tin người dùng
      */
@@ -171,12 +175,16 @@ public class AuthenticationService {
         if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
             throw new AppException(ErrorCode.VERIFICATION_TOKEN_EXPIRED);
         }
-        if (token.getUser().getStatus() != 0) {
+        if (!AuthenticationAction.FORGOT_PASSWORD.equals(request.getAction()) && token.getUser().getStatus() != 0) {
             throw new AppException(ErrorCode.USER_ALREADY_VERIFIED);
         }
 
         User user = token.getUser();
-        user.setStatus(1);
+        if (request.getAction().equals(AuthenticationAction.FORGOT_PASSWORD)) {
+            user.setPassword(passwordEncoder.encode(token.getTemporaryPassword()));
+        } else {
+            user.setStatus(1);
+        }
         userRepository.save(user);
 
         verificationTokenRepository.delete(token);
@@ -260,6 +268,7 @@ public class AuthenticationService {
 
     /**
      * Tạo token cho người dùng đăng nhập qua OAuth
+     *
      * @param user Người dùng đã xác thực
      * @return Response chứa token và thông tin người dùng
      */
@@ -300,7 +309,7 @@ public class AuthenticationService {
         if (user.getRoles() != null) {
             for (Role role : user.getRoles()) {
                 scope.add("ROLE_" + role.getName());
-                
+
                 // Lấy permissions trong cùng phiên Hibernate
                 if (role.getPermissions() != null) {
                     for (Permission permission : role.getPermissions()) {
@@ -310,5 +319,29 @@ public class AuthenticationService {
             }
         }
         return scope.toString();
+    }
+
+    public void forgotPassword(@Valid AuthenticationRequest request) throws ApiException {
+        log.info("process forgot password user: {}", request.getUsername());
+        User user = userRepository.findByUsername(request.getUsername()).orElse(null);
+        if (user == null) {
+            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+        }
+        //Create verification token
+        String token = UUID.randomUUID().toString();
+        //Save token to database
+        String temporaryPassword = RandomUtils.generateRandomToken(6);
+        verificationTokenRepository.save(VerificationToken.builder().token(token)
+                .user(user)
+                .expiryDate(LocalDateTime.now().plusDays(1))
+                .temporaryPassword(temporaryPassword)
+                .build());
+        //Send email
+        emailService.sendForgotPasswordEmailApi(
+                user.getEmail(),
+                "Verification Email",
+                "?token=" + token,
+                temporaryPassword
+        );
     }
 }

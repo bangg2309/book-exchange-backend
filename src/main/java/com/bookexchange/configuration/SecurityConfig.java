@@ -24,6 +24,7 @@ public class SecurityConfig {
             "/auth/refresh",
             "auth/register",
             "/auth/verify-email",
+            "/auth/forgot-password",
             "/login/oauth2/code/**",
             "/oauth2/**",
             "/swagger-ui/**",
