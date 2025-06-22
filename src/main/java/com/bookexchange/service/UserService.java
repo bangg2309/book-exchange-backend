@@ -139,4 +139,10 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
+
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public long countTotalUsers() {
+        return userRepository.count();
+    }
 }

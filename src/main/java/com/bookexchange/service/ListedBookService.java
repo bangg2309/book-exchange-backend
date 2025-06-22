@@ -112,6 +112,37 @@ public class ListedBookService {
         return listedBookMapper.toListedBookDetailResponse(listedBook);
     }
 
+    /**
+     * Lấy danh sách sách liên quan theo category
+     * @param bookId ID của sách hiện tại
+     * @return Danh sách các sách liên quan
+     */
+    @Transactional(readOnly = true)
+    public List<ListedBooksResponse> getRelatedBooks(Long bookId) {
+        // Lấy thông tin sách hiện tại
+        ListedBook currentBook = listedBookRepository.findById(bookId)
+                .orElseThrow(() -> new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND));
+        
+        // Lấy danh sách category ID của sách hiện tại
+        List<Long> categoryIds = currentBook.getCategories().stream()
+                .map(Category::getId)
+                .collect(Collectors.toList());
+        
+        // Nếu không có category nào, trả về danh sách rỗng
+        if (categoryIds.isEmpty()) {
+            return List.of();
+        }
+        
+        // Tìm sách liên quan theo category, giới hạn 4 kết quả
+        PageRequest pageRequest = PageRequest.of(0, 4);
+        List<ListedBook> relatedBooks = listedBookRepository.findRelatedBooksByCategories(bookId, categoryIds, pageRequest);
+        
+        // Map kết quả sang ListedBooksResponse bằng mapper
+        return relatedBooks.stream()
+                .map(listedBookMapper::toListedBooksResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional(readOnly = true)
     public Page<ListedBooksResponse> getBooks(int page, int size, String sortBy, Sort.Direction direction, String title, String author, Long categoryId, Double minPrice, Double maxPrice, Integer condition, Long schoolId) {
 
@@ -156,5 +187,31 @@ public class ListedBookService {
             throw new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND);
         }
         return listedBooks;
+    }
+
+
+    public long countTotalBooks() {
+        return listedBookRepository.count();
+    }
+    
+
+    public long countTotalCategories() {
+        return categoryRepository.count();
+    }
+
+    /**
+     * Lấy danh sách sách mới nhất đã được phê duyệt với số lượng cụ thể
+     * 
+     * @param limit Số lượng sách cần lấy
+     * @return Danh sách đối tượng ListedBooksResponse
+     */
+    public List<ListedBooksResponse> getRecentApprovedBooks(int limit) {
+        // Lấy sách có status = 1 (đã được phê duyệt), sắp xếp theo thời gian tạo giảm dần
+        PageRequest pageRequest = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<ListedBook> books = listedBookRepository.findByStatus(1, pageRequest);
+        
+        return books.getContent().stream()
+                .map(listedBookMapper::toListedBooksResponse)
+                .collect(Collectors.toList());
     }
 }

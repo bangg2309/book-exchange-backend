@@ -69,6 +69,26 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
 
     List<ListedBook> findBySeller(User user);
 
+    @Query("SELECT lb FROM ListedBook lb JOIN lb.categories c " +
+           "WHERE lb.status = 1 AND lb.id <> :bookId AND c.id IN :categoryIds " +
+           "GROUP BY lb.id " +
+           "ORDER BY FUNCTION('RAND')")
+    List<ListedBook> findRelatedBooksByCategories(
+            @Param("bookId") Long bookId,
+            @Param("categoryIds") List<Long> categoryIds,
+            Pageable pageable);
+
+    /**
+     * Tìm sách theo trạng thái với phân trang
+     */
+    Page<ListedBook> findByStatus(Integer status, Pageable pageable);
+
+    /**
+     * Đếm số lượng sách theo trạng thái
+     */
+    @Query(value = "SELECT COUNT(*) FROM listed_books WHERE status = :status", nativeQuery = true)
+    long countByStatus(@Param("status") int status);
+
     @Query("SELECT new com.bookexchange.dto.response.ListedBooksResponse(" +
            "lb.id, lb.title, lb.priceNew, lb.price, lb.conditionNumber, " +
            "lb.description, lb.thumbnail, lb.publisher, " +

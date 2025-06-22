@@ -24,6 +24,7 @@ public class ListedBookDetailResponse {
     String conditionDescription;
     String pageCount;
     String sellerName;
+    Long sellerId;
     String address;
     BigDecimal priceNew;
     BigDecimal price;
