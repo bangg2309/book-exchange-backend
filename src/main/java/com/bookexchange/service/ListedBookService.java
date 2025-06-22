@@ -185,4 +185,13 @@ public class ListedBookService {
                 .map(listedBookMapper::toListedBooksResponse)
                 .collect(Collectors.toList());
     }
+
+  public List<ListedBooksResponse> searchBook(String query) {
+      log.info("Searching books with query: {}", query);
+      List<ListedBooksResponse> listedBooks = listedBookRepository.searchBook(query);
+      if (listedBooks.isEmpty()) {
+          throw new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND);
+      }
+      return listedBooks;
+  }
 }
