@@ -6,6 +6,8 @@ import com.bookexchange.dto.response.BookManagementResponse;
 import com.bookexchange.dto.response.CategoryManagementResponse;
 import com.bookexchange.dto.response.ListedBookDetailResponse;
 import com.bookexchange.dto.response.ListedBooksResponse;
+import com.bookexchange.exception.AppException;
+import com.bookexchange.exception.ErrorCode;
 import com.bookexchange.service.ListedBookService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -20,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/listed-books")
@@ -103,14 +106,28 @@ public class ListedBookController {
     }
 
     @GetMapping("/pending")
-    public ApiResponse<Page<BookManagementResponse>> getPendingBooks(
+    public ApiResponse<Page<ListedBooksResponse>> getPendingBooks(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ApiResponse.<Page<BookManagementResponse>>builder()
+        return ApiResponse.<Page<ListedBooksResponse>>builder()
                 .result(listedBookService.getPendingBooks(PageRequest.of(page, size)))
                 .build();
     }
+
+    @PutMapping("/{id}")
+    public ApiResponse<Void> updateBookStatus(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
+        if (updates.containsKey("status")) {
+            Integer status = (Integer) updates.get("status");
+            listedBookService.updateBookStatus(id, status);
+            return ApiResponse.<Void>builder().build();
+        } else {
+            throw new AppException(ErrorCode.BOOK_ALREADY_APPROVED);
+        }
+    }
+
+
+
 
 
 

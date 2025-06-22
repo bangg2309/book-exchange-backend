@@ -53,7 +53,9 @@ public enum ErrorCode {
     ORDER_VALUE_TOO_LOW(1045, "Order value is too low for this voucher", HttpStatus.BAD_REQUEST),
     INVALID_VOUCHER(1046, "Invalid voucher configuration", HttpStatus.BAD_REQUEST),
     ADDRESS_NOT_FOUND(1047, "Address not found", HttpStatus.NOT_FOUND),
-    OLD_PASSWORD_INCORRECT(1048, "Old password is incorrect", HttpStatus.BAD_REQUEST)
+    OLD_PASSWORD_INCORRECT(1048, "Old password is incorrect", HttpStatus.BAD_REQUEST),
+    BOOK_ALREADY_APPROVED(1049, "Book has already been approved", HttpStatus.BAD_REQUEST)
+
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

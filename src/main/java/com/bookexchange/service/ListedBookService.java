@@ -175,9 +175,20 @@ public class ListedBookService {
                 .collect(Collectors.toList());
     }
 
-    public Page<BookManagementResponse> getPendingBooks(Pageable pageable) {
+    public Page<ListedBooksResponse> getPendingBooks(Pageable pageable) {
         return listedBookRepository.findPendingBooks(pageable);
 
     }
+
+    public void updateBookStatus(Long id, Integer status) {
+        ListedBook book = listedBookRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND));
+        book.setStatus(status);
+        listedBookRepository.save(book);
+    }
+
+
+
+
 
 }

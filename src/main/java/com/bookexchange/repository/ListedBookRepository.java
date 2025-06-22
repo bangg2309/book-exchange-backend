@@ -73,14 +73,15 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
     @Query("SELECT new com.bookexchange.dto.response.ListedBooksResponse(" +
             "lb.id, lb.title, lb.priceNew, lb.price, lb.conditionNumber, " +
             "lb.description, lb.thumbnail, lb.publisher, " +
-            "s.name, u.fullName, COALESCE((SELECT MIN(a.name) FROM lb.authors a), '')) " +
+            "s.name, u.fullName, " +
+            "COALESCE((SELECT MIN(a.name) FROM lb.authors a), '') ) " +
             "FROM ListedBook lb " +
             "JOIN lb.school s " +
             "JOIN lb.seller u " +
-            "LEFT JOIN lb.authors a " +
             "WHERE lb.status = 0 " +
             "GROUP BY lb.id, lb.title, lb.priceNew, lb.price, lb.conditionNumber, " +
             "lb.description, lb.thumbnail, lb.publisher, s.name, u.fullName")
-    Page<BookManagementResponse> findPendingBooks(Pageable pageable);
+    Page<ListedBooksResponse> findPendingBooks(Pageable pageable);
+
 
 }
