@@ -14,6 +14,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -377,5 +380,104 @@ public class OrderService {
                 .collect(Collectors.toList());
         
         return responses;
+    }
+
+    /**
+     * Admin: Get all orders with pagination and optional search
+     * 
+     * @param pageable Pagination information
+     * @param search Optional search term
+     * @return Page of order responses
+     */
+    public Page<OrderResponse> getAllOrders(Pageable pageable, String search) {
+        Page<Order> ordersPage;
+        
+        if (search != null && !search.trim().isEmpty()) {
+            // Tìm kiếm đơn giản theo ID
+            try {
+                Long orderId = Long.parseLong(search);
+                ordersPage = orderRepository.findById(orderId)
+                        .map(List::of)
+                        .map(orders -> new PageImpl<>(orders, pageable, 1))
+                        .orElse(new PageImpl<>(List.of(), pageable, 0));
+            } catch (NumberFormatException e) {
+                // Nếu không phải ID, tìm tất cả (không hỗ trợ tìm theo username)
+                ordersPage = orderRepository.findAll(pageable);
+            }
+        } else {
+            // Lấy tất cả đơn hàng
+            ordersPage = orderRepository.findAll(pageable);
+        }
+        
+        // Chuyển đổi thành OrderResponse
+        List<OrderResponse> orderResponses = ordersPage.getContent().stream()
+                .map(order -> {
+                    List<OrderItem> items = new ArrayList<>(order.getOrderItems());
+                    return orderMapper.toOrderResponse(order, items);
+                })
+                .collect(Collectors.toList());
+        
+        return new PageImpl<>(orderResponses, pageable, ordersPage.getTotalElements());
+    }
+    
+    /**
+     * Admin: Update order status
+     * 
+     * @param orderId Order ID
+     * @param status New status
+     * @return Updated order response
+     */
+    @Transactional
+    public OrderResponse updateOrderStatus(Long orderId, Integer status) {
+        // Tìm đơn hàng
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        
+        // Cập nhật trạng thái đơn hàng
+        order.setStatus(status);
+        Order savedOrder = orderRepository.save(order);
+        
+        // Cập nhật trạng thái các OrderItem
+        List<OrderItem> orderItems = new ArrayList<>(order.getOrderItems());
+        for (OrderItem item : orderItems) {
+            item.setStatus(status);
+            orderItemRepository.save(item);
+        }
+        
+        // Trả về OrderResponse
+        return orderMapper.toOrderResponse(savedOrder, orderItems);
+    }
+    
+    /**
+     * Admin: Delete order
+     * 
+     * @param orderId Order ID
+     * @return true if successful
+     */
+    @Transactional
+    public boolean deleteOrder(Long orderId) {
+        // Tìm đơn hàng
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        
+        try {
+            // Xóa các OrderBookItem trước
+            List<OrderItem> orderItems = new ArrayList<>(order.getOrderItems());
+            for (OrderItem item : orderItems) {
+                // Lấy và xóa các OrderBookItem thuộc về OrderItem này
+                orderBookItemRepository.deleteAll(item.getBookItems());
+            }
+            
+            // Xóa các OrderItem
+            orderItemRepository.deleteAll(orderItems);
+            
+            // Xóa Order
+            orderRepository.delete(order);
+            
+            return true;
+        } catch (Exception e) {
+            log.error("Error deleting order: {}", e.getMessage());
+            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+        }
     }
 }

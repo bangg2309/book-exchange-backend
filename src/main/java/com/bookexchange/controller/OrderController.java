@@ -9,7 +9,10 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -76,5 +79,39 @@ public class OrderController {
     public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long orderId) {
         OrderResponse order = orderService.getOrderById(orderId);
         return ResponseEntity.ok(order);
+    }
+    
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Page<OrderResponse>> getAllOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
+    ) {
+        Page<OrderResponse> orders = orderService.getAllOrders(PageRequest.of(page, size), search);
+        return ApiResponse.<Page<OrderResponse>>builder()
+                .result(orders)
+                .build();
+    }
+
+    @PatchMapping("/admin/{orderId}/status/{status}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<OrderResponse> updateOrderStatus(
+            @PathVariable Long orderId,
+            @PathVariable Integer status
+    ) {
+        OrderResponse order = orderService.updateOrderStatus(orderId, status);
+        return ApiResponse.<OrderResponse>builder()
+                .result(order)
+                .build();
+    }
+
+    @DeleteMapping("/admin/{orderId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Boolean> deleteOrder(@PathVariable Long orderId) {
+        boolean result = orderService.deleteOrder(orderId);
+        return ApiResponse.<Boolean>builder()
+                .result(result)
+                .build();
     }
 }
