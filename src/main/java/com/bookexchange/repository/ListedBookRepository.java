@@ -68,4 +68,13 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
             Pageable pageable);
 
     List<ListedBook> findBySeller(User user);
+    
+    @Query("SELECT lb FROM ListedBook lb JOIN lb.categories c " +
+           "WHERE lb.status = 1 AND lb.id <> :bookId AND c.id IN :categoryIds " +
+           "GROUP BY lb.id " +
+           "ORDER BY FUNCTION('RAND')")
+    List<ListedBook> findRelatedBooksByCategories(
+            @Param("bookId") Long bookId,
+            @Param("categoryIds") List<Long> categoryIds,
+            Pageable pageable);
 }

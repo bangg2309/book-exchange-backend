@@ -28,6 +28,9 @@ public class ListedBookMapper {
                 .schoolName(listedBook.getSchool() != null ? listedBook.getSchool().getName() : null)
                 .thumbnail(listedBook.getThumbnail())
                 .status(listedBook.getStatus())
+                .author(listedBook.getAuthors() != null && !listedBook.getAuthors().isEmpty() 
+                        ? listedBook.getAuthors().iterator().next().getName() 
+                        : null)
                 .build();
     }
 
@@ -66,6 +69,7 @@ public class ListedBookMapper {
                 .conditionDescription(listedBook.getConditionDescription())
                 .pageCount(String.valueOf(listedBook.getPageCount()))
                 .sellerName(listedBook.getSeller().getFullName())
+                .sellerId(listedBook.getSeller().getId())
                 .address(listedBook.getAddress())
                 .priceNew(listedBook.getPriceNew())
                 .price(listedBook.getPrice())
