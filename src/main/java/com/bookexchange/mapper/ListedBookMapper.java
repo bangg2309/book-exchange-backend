@@ -53,6 +53,7 @@ public class ListedBookMapper {
                         .collect(Collectors.toList()))
                 .publisher(listedBook.getPublisher())
                 .status(listedBook.getStatus())
+                .createdAt(listedBook.getCreatedAt())
                 .build();
     }
 

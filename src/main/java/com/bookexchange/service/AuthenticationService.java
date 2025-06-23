@@ -295,7 +295,7 @@ public class AuthenticationService {
     }
 
     @Transactional
-    private String buildScope(User user) {
+    protected String buildScope(User user) {
         StringJoiner scope = new StringJoiner(" ");
         if (user.getRoles() != null) {
             for (Role role : user.getRoles()) {

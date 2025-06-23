@@ -200,6 +200,53 @@ public class ListedBookService {
     }
 
     /**
+     * Phê duyệt sách với status = 1 (đã được phê duyệt)
+     * 
+     * @param id ID của sách cần phê duyệt
+     * @return true nếu phê duyệt thành công, false nếu không
+     */
+    @Transactional
+    public boolean approveBook(Long id) {
+        ListedBook listedBook = listedBookRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND));
+        
+        // Chỉ phê duyệt sách có status = 0 (chưa phê duyệt)
+        if (listedBook.getStatus() == 0) {
+            listedBook.setStatus(1);
+            listedBookRepository.save(listedBook);
+            log.info("Book with ID {} has been approved", id);
+            return true;
+        } else {
+            log.warn("Cannot approve book with ID {} because its status is not 0", id);
+            return false;
+        }
+    }
+
+    /**
+     * Từ chối sách với status = 2 (đã bị từ chối)
+     * 
+     * @param id ID của sách cần từ chối
+     * @param reason Lý do từ chối (tùy chọn)
+     * @return true nếu từ chối thành công, false nếu không
+     */
+    @Transactional
+    public boolean rejectBook(Long id, String reason) {
+        ListedBook listedBook = listedBookRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.LISTED_BOOK_NOT_FOUND));
+        
+        // Chỉ từ chối sách có status = 0 (chưa phê duyệt)
+        if (listedBook.getStatus() == 0) {
+            listedBook.setStatus(2); // Status 2 cho sách bị từ chối
+            log.info("Book with ID {} has been rejected. Reason: {}", id, reason);
+            listedBookRepository.save(listedBook);
+            return true;
+        } else {
+            log.warn("Cannot reject book with ID {} because its status is not 0", id);
+            return false;
+        }
+    }
+
+    /**
      * Lấy danh sách sách mới nhất đã được phê duyệt với số lượng cụ thể
      * 
      * @param limit Số lượng sách cần lấy
@@ -213,5 +260,17 @@ public class ListedBookService {
         return books.getContent().stream()
                 .map(listedBookMapper::toListedBooksResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Lấy danh sách sách theo trạng thái (chưa duyệt/đã duyệt/từ chối) với phân trang
+     * 
+     * @param status Trạng thái sách (0: chưa duyệt, 1: đã duyệt, 2: từ chối)
+     * @param pageable Thông tin phân trang
+     * @return Page<BookManagementResponse> Danh sách sách với phân trang
+     */
+    public Page<BookManagementResponse> getBooksByStatus(Integer status, Pageable pageable) {
+        Page<ListedBook> books = listedBookRepository.findByStatus(status, pageable);
+        return books.map(listedBookMapper::toBookManagementResponse);
     }
 }
