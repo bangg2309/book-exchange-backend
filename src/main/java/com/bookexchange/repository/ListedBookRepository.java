@@ -84,6 +84,13 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
     Page<ListedBook> findByStatus(Integer status, Pageable pageable);
 
     /**
+     * Tìm sách theo trạng thái với phân trang và sắp xếp tùy chỉnh
+     * Phương thức này được Spring JPA tự động triển khai
+     */
+    @Query("SELECT lb FROM ListedBook lb WHERE lb.status = :status ORDER BY lb.createdAt DESC") 
+    Page<ListedBook> findByStatusOrderByCreatedAtDesc(@Param("status") Integer status, Pageable pageable);
+
+    /**
      * Đếm số lượng sách theo trạng thái
      */
     @Query(value = "SELECT COUNT(*) FROM listed_books WHERE status = :status", nativeQuery = true)

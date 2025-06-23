@@ -28,4 +28,5 @@ public class BookManagementResponse {
     String name;
     List<AuthorResponse> author;
     Integer status;
+    LocalDateTime createdAt;
 }
