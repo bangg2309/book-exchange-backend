@@ -105,8 +105,7 @@ public interface ListedBookRepository extends JpaRepository<ListedBook, Long> {
            "JOIN lb.seller u " +
            "LEFT JOIN lb.authors a " +
            "LEFT JOIN lb.categories c " +
-//         "WHERE lb.status = 1 " +
-           "WHERE" +
+           "WHERE lb.status = 1 AND" +
            "(LOWER(lb.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
            "EXISTS (SELECT 1 FROM lb.authors auth WHERE LOWER(auth.name) LIKE LOWER(CONCAT('%', :query, '%'))) OR " +
            "EXISTS (SELECT 1 FROM lb.categories cat WHERE LOWER(cat.name) LIKE LOWER(CONCAT('%', :query, '%'))) OR " +
