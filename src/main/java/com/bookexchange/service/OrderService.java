@@ -52,6 +52,7 @@ public class OrderService {
 
     /**
      * Process a checkout request and create orders
+     *
      * @param request The order creation request
      * @return The created order response
      */
@@ -72,17 +73,17 @@ public class OrderService {
         // 3. Nhóm items theo người bán và tính subtotal
         Map<Long, List<OrderItemRequest>> itemsBySeller = request.getItems().stream()
                 .collect(Collectors.groupingBy(OrderItemRequest::getSellerId));
-        
+
         // Tính tổng giá trị hàng hóa và tổng phí vận chuyển
         BigDecimal subtotal = calculateSubtotal(request.getItems());
         BigDecimal totalShippingFee = BigDecimal.ZERO;
-        
+
         for (List<OrderItemRequest> sellerItems : itemsBySeller.values()) {
             if (!sellerItems.isEmpty()) {
                 totalShippingFee = totalShippingFee.add(sellerItems.getFirst().getShippingFee());
             }
         }
-        
+
         // Tính tổng giá trị đơn hàng trước khi chiết khấu
         BigDecimal totalBeforeDiscount = subtotal.add(totalShippingFee);
 
@@ -90,28 +91,28 @@ public class OrderService {
         Voucher voucher = null;
         BigDecimal discount = BigDecimal.ZERO;
         BigDecimal discountRate = BigDecimal.ZERO;
-        
+
         if (request.getVoucherCode() != null && !request.getVoucherCode().isEmpty()) {
             try {
                 // Tính số tiền giảm giá
                 discount = voucherService.validateAndCalculateDiscount(request.getVoucherCode(), subtotal);
-                
+
                 // Lấy thông tin voucher
                 voucher = voucherRepository.findByCode(request.getVoucherCode())
                         .orElseThrow(() -> new AppException(ErrorCode.VOUCHER_NOT_FOUND));
-                
+
                 // Cập nhật request với số tiền giảm giá
                 request.setDiscount(discount);
-                
+
                 // Tính tỷ lệ giảm giá (dùng để phân bổ)
                 if (subtotal.compareTo(BigDecimal.ZERO) > 0) {
                     discountRate = discount.divide(subtotal, DECIMAL_SCALE, RoundingMode.HALF_UP);
                 }
-                
+
                 // Cập nhật tổng giá trị đơn hàng sau khi giảm giá
                 BigDecimal newTotal = subtotal.add(totalShippingFee).subtract(discount);
                 request.setTotalPrice(newTotal);
-                
+
                 // Đánh dấu voucher đã được sử dụng
                 voucherService.applyVoucher(request.getVoucherCode());
             } catch (AppException e) {
@@ -139,12 +140,12 @@ public class OrderService {
 
         // 6. Xử lý các OrderItem (nhóm theo người bán)
         List<OrderItem> orderItems = new ArrayList<>();
-        
+
         // Phân bổ số tiền giảm giá cho từng OrderItem
         BigDecimal totalDiscountApplied = BigDecimal.ZERO;
         BigDecimal remainingDiscount = discount;
         List<OrderItemWithSubtotal> orderItemsWithSubtotals = new ArrayList<>();
-        
+
         for (Map.Entry<Long, List<OrderItemRequest>> entry : itemsBySeller.entrySet()) {
             Long sellerId = entry.getKey();
             List<OrderItemRequest> sellerItems = entry.getValue();
@@ -163,10 +164,10 @@ public class OrderService {
 
             // Tính tổng giá trị đơn hàng từ người bán này
             BigDecimal sellerSubtotal = BigDecimal.ZERO;
-            
+
             // Lưu OrderItem trước để lấy ID
             OrderItem savedOrderItem = orderItemRepository.save(orderItem);
-            
+
             // Xử lý từng sách
             for (OrderItemRequest itemRequest : sellerItems) {
                 for (OrderBookItemRequest bookItemRequest : itemRequest.getBookItems()) {
@@ -198,21 +199,21 @@ public class OrderService {
                     listedBookRepository.save(book);
                 }
             }
-            
+
             // Lưu lại thông tin để phân bổ giảm giá
             orderItemsWithSubtotals.add(new OrderItemWithSubtotal(savedOrderItem, sellerSubtotal));
-            
+
             // Thêm vào danh sách kết quả
             orderItems.add(savedOrderItem);
         }
-        
+
         // 7. Phân bổ giảm giá cho từng OrderItem
         int lastIndex = orderItemsWithSubtotals.size() - 1;
-        
+
         for (int i = 0; i < orderItemsWithSubtotals.size(); i++) {
             OrderItemWithSubtotal item = orderItemsWithSubtotals.get(i);
             BigDecimal itemDiscount;
-            
+
             if (i == lastIndex) {
                 // Đơn hàng cuối cùng nhận phần giảm giá còn lại để tránh sai số làm tròn
                 itemDiscount = remainingDiscount;
@@ -221,21 +222,22 @@ public class OrderService {
                 itemDiscount = item.subtotal.multiply(discountRate).setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
                 remainingDiscount = remainingDiscount.subtract(itemDiscount);
             }
-            
+
             // Cập nhật tổng tiền sau khi giảm giá
             BigDecimal totalWithShipping = item.orderItem.getShippingFee().add(item.subtotal);
             BigDecimal finalTotal = totalWithShipping.subtract(itemDiscount);
-            
+
             // Lưu vào OrderItem
             item.orderItem.setTotalAmount(finalTotal);
             orderItemRepository.save(item.orderItem);
-            
+
             // Cộng vào tổng giảm giá đã áp dụng
             totalDiscountApplied = totalDiscountApplied.add(itemDiscount);
         }
 
         // 8. Xóa giỏ hàng
-        cartService.clearCart(user.getId());
+        shoppingCartRepository.findByUserIdWithItems(user.getId()).ifPresent(shoppingCart -> cartService.clearCart(user.getId()));
+
 
         // 9. Trả về response
         return orderMapper.toOrderResponse(savedOrder, orderItems);
@@ -247,7 +249,7 @@ public class OrderService {
     private static class OrderItemWithSubtotal {
         final OrderItem orderItem;
         final BigDecimal subtotal;
-        
+
         OrderItemWithSubtotal(OrderItem orderItem, BigDecimal subtotal) {
             this.orderItem = orderItem;
             this.subtotal = subtotal;
@@ -256,23 +258,25 @@ public class OrderService {
 
     /**
      * Calculate subtotal of all items in an order
+     *
      * @param items List of order items
      * @return Total order value
      */
     private BigDecimal calculateSubtotal(List<OrderItemRequest> items) {
         BigDecimal subtotal = BigDecimal.ZERO;
-        
+
         for (OrderItemRequest item : items) {
             for (OrderBookItemRequest bookItem : item.getBookItems()) {
                 subtotal = subtotal.add(bookItem.getSubtotal());
             }
         }
-        
+
         return subtotal;
     }
 
     /**
      * Get orders for a user
+     *
      * @param userId The user ID
      * @return List of orders
      */
@@ -287,6 +291,7 @@ public class OrderService {
 
     /**
      * Get orders for a seller
+     *
      * @param sellerId The seller ID
      * @return List of orders containing items sold by the seller
      */
@@ -309,9 +314,9 @@ public class OrderService {
 
     /**
      * Cập nhật trạng thái thanh toán của đơn hàng
-     * 
-     * @param orderId mã đơn hàng
-     * @param status trạng thái mới
+     *
+     * @param orderId       mã đơn hàng
+     * @param status        trạng thái mới
      * @param transactionId mã giao dịch từ cổng thanh toán
      * @return đơn hàng sau khi cập nhật
      */
@@ -320,59 +325,59 @@ public class OrderService {
         // Tìm đơn hàng
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-        
+
         // Cập nhật trạng thái và mã giao dịch
         order.setStatus(status);
         order.setPaymentTransactionId(transactionId);
-        
+
         List<OrderItem> orderItems = new ArrayList<>(order.getOrderItems());
-        
+
         // Cập nhật trạng thái các OrderItem
         for (OrderItem item : orderItems) {
             item.setStatus(status);
             orderItemRepository.save(item);
         }
-        
+
         // Lưu đơn hàng
         Order savedOrder = orderRepository.save(order);
-        
+
         // Chuyển đổi thành OrderResponse
         return orderMapper.toOrderResponse(savedOrder, orderItems);
     }
 
     /**
      * Lấy thông tin đơn hàng theo ID
-     * 
+     *
      * @param orderId ID đơn hàng
      * @return thông tin đơn hàng
      */
     public OrderResponse getOrderById(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-        
+
         List<OrderItem> orderItems = new ArrayList<>(order.getOrderItems());
         return orderMapper.toOrderResponse(order, orderItems);
     }
-    
+
     /**
      * Lấy danh sách đơn bán của người dùng hiện tại
-     * 
+     *
      * @return Danh sách đơn hàng mà người dùng hiện tại là người bán
      */
     public List<OrderResponse> getCurrentUserSellOrders() {
         // Lấy thông tin người dùng hiện tại từ SecurityContext
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        
+
         User currentUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        
+
         // Lấy danh sách đơn hàng của người bán
         List<OrderItem> sellerItems = orderItemRepository.findBySellerId(currentUser.getId());
-        
+
         // Nhóm theo đơn hàng
         Map<Long, List<OrderItem>> orderItemsMap = sellerItems.stream()
                 .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
-        
+
         // Tạo responses
         List<OrderResponse> responses = orderItemsMap.values().stream()
                 .map(orderItems -> {
@@ -380,20 +385,20 @@ public class OrderService {
                     return orderMapper.toOrderResponse(order, orderItems);
                 })
                 .collect(Collectors.toList());
-        
+
         return responses;
     }
 
     /**
      * Admin: Get all orders with pagination and optional search
-     * 
+     *
      * @param pageable Pagination information
-     * @param search Optional search term
+     * @param search   Optional search term
      * @return Page of order responses
      */
     public Page<OrderResponse> getAllOrders(Pageable pageable, String search) {
         Page<Order> ordersPage;
-        
+
         if (search != null && !search.trim().isEmpty()) {
             // Tìm kiếm đơn giản theo ID
             try {
@@ -410,7 +415,7 @@ public class OrderService {
             // Lấy tất cả đơn hàng
             ordersPage = orderRepository.findAll(pageable);
         }
-        
+
         // Chuyển đổi thành OrderResponse
         List<OrderResponse> orderResponses = ordersPage.getContent().stream()
                 .map(order -> {
@@ -418,15 +423,15 @@ public class OrderService {
                     return orderMapper.toOrderResponse(order, items);
                 })
                 .collect(Collectors.toList());
-        
+
         return new PageImpl<>(orderResponses, pageable, ordersPage.getTotalElements());
     }
-    
+
     /**
      * Admin: Update order status
-     * 
+     *
      * @param orderId Order ID
-     * @param status New status
+     * @param status  New status
      * @return Updated order response
      */
     @Transactional
@@ -434,25 +439,25 @@ public class OrderService {
         // Tìm đơn hàng
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-        
+
         // Cập nhật trạng thái đơn hàng
         order.setStatus(status);
         Order savedOrder = orderRepository.save(order);
-        
+
         // Cập nhật trạng thái các OrderItem
         List<OrderItem> orderItems = new ArrayList<>(order.getOrderItems());
         for (OrderItem item : orderItems) {
             item.setStatus(status);
             orderItemRepository.save(item);
         }
-        
+
         // Trả về OrderResponse
         return orderMapper.toOrderResponse(savedOrder, orderItems);
     }
-    
+
     /**
      * Admin: Delete order
-     * 
+     *
      * @param orderId Order ID
      * @return true if successful
      */
@@ -461,7 +466,7 @@ public class OrderService {
         // Tìm đơn hàng
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-        
+
         try {
             // Xóa các OrderBookItem trước
             List<OrderItem> orderItems = new ArrayList<>(order.getOrderItems());
@@ -469,13 +474,13 @@ public class OrderService {
                 // Lấy và xóa các OrderBookItem thuộc về OrderItem này
                 orderBookItemRepository.deleteAll(item.getBookItems());
             }
-            
+
             // Xóa các OrderItem
             orderItemRepository.deleteAll(orderItems);
-            
+
             // Xóa Order
             orderRepository.delete(order);
-            
+
             return true;
         } catch (Exception e) {
             log.error("Error deleting order: {}", e.getMessage());
@@ -489,14 +494,14 @@ public class OrderService {
 
     /**
      * Lấy dữ liệu doanh thu theo khoảng thời gian
-     * 
+     *
      * @param period Khoảng thời gian (day, week, month, year)
      * @return Object chứa dữ liệu doanh thu
      */
     public RevenueStatsDTO getRevenueStats(String period) {
         LocalDateTime startDate;
         LocalDateTime endDate = LocalDateTime.now();
-        
+
         // Xác định khoảng thời gian dựa trên period
         switch (period.toLowerCase()) {
             case "day":
@@ -520,16 +525,16 @@ public class OrderService {
                 startDate = endDate.minusMonths(12);
                 period = "month";
         }
-        
+
         log.info("Fetching revenue stats for period: {}, from: {} to: {}", period, startDate, endDate);
-        
+
         // Lấy tất cả đơn hàng đã xử lý hoặc hoàn thành (status >= 2)
         // Trạng thái đơn hàng: 1=PENDING, 2=PROCESSING, 3=SHIPPED, 4=DELIVERED, 5=CANCELLED, 6=REFUNDED
         int minOrderStatus = 2; // PROCESSING: đã xử lý/đã thanh toán
-        
+
         // Tổng hợp dữ liệu doanh thu theo khoảng thời gian
         List<Object[]> revenueData;
-        
+
         switch (period.toLowerCase()) {
             case "day":
                 revenueData = orderRepository.getRevenueByDay(startDate, endDate, minOrderStatus);
@@ -546,17 +551,17 @@ public class OrderService {
             default:
                 revenueData = orderRepository.getRevenueByMonth(startDate, endDate, minOrderStatus);
         }
-        
+
         log.info("Revenue data size: {}", revenueData.size());
-        
+
         // Chuyển đổi dữ liệu sang định dạng phù hợp
         List<String> labels = new ArrayList<>();
         List<Double> data = new ArrayList<>();
-        
+
         for (Object[] row : revenueData) {
             String label = String.valueOf(row[0]); // Chuyển đổi an toàn thành String
             BigDecimal revenue;
-            
+
             try {
                 // Xử lý revenue một cách an toàn
                 if (row[1] instanceof BigDecimal) {
@@ -566,9 +571,9 @@ public class OrderService {
                 } else {
                     revenue = new BigDecimal(String.valueOf(row[1]));
                 }
-                
+
                 log.debug("Raw data: {} - {}", label, revenue);
-                
+
                 // Chuyển đổi nhãn thời gian cho người dùng
                 switch (period.toLowerCase()) {
                     case "month":
@@ -586,7 +591,7 @@ public class OrderService {
                         }
                         break;
                 }
-                
+
                 labels.add(label);
                 // Chuyển BigDecimal sang nghìn đồng (kVND)
                 data.add(revenue.divide(new BigDecimal(1000), RoundingMode.HALF_UP).doubleValue());
@@ -594,9 +599,9 @@ public class OrderService {
                 log.error("Error processing revenue data: {} - {}", row[0], row[1], e);
             }
         }
-        
+
         log.info("Processed revenue data: labels={}, data={}", labels, data);
-        
+
         // Tạo đối tượng kết quả
         return RevenueStatsDTO.builder()
                 .labels(labels)
